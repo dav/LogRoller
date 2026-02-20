@@ -1,0 +1,56 @@
+name: LogRoller
+options:
+  minimumXcodeGenVersion: 2.40.0
+  deploymentTarget:
+    macOS: "15.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: 8U7J5S7RGC
+    SWIFT_VERSION: 6.0
+    CODE_SIGN_STYLE: Automatic
+packages:
+  LogRollerModules:
+    path: Modules
+targets:
+  LogRollerApp:
+    type: application
+    platform: macOS
+    sources:
+      - App/Sources
+    resources:
+      - App/Sources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.akuaku.LogRollerApp
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: LogRoller
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - package: LogRollerModules
+        product: LogRollerCore
+      - package: LogRollerModules
+        product: LogRollerServer
+
+  logroller:
+    type: tool
+    platform: macOS
+    sources:
+      - CLI/Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.akuaku.logroller
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - package: LogRollerModules
+        product: LogRollerCore
+      - package: LogRollerModules
+        product: LogRollerServer
+
+  LogRollerAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - App/Tests
+    dependencies:
+      - target: LogRollerApp

@@ -1,0 +1,571 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		12B85BA7851BAEABC56FDB24 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8E0D7BE8AF9D4CF2E2B4FD /* AppModel.swift */; };
+		299EE3FC34CE44FE708AABFF /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE852C85727E36C18425F0CD /* MainWindowView.swift */; };
+		3C3EC656990FD960716308B0 /* LogRollerCLI.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9BFA65B3C1ECAE3E1CED8D4 /* LogRollerCLI.swift */; };
+		3C80CACD2EC74247A1A49615 /* WindowCloseInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97ADF93E83874B951D83ED30 /* WindowCloseInterceptor.swift */; };
+		41D34147A36B827A14AB0EE7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ED9F827CAC2D3A20C7098520 /* Assets.xcassets */; };
+		69E09A6A20F0670EAB73DCA3 /* LogRollerCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0E978A0611046D7B2723B38 /* LogRollerCore */; };
+		81F6A322066A95115E64E457 /* LogRollerServer in Frameworks */ = {isa = PBXBuildFile; productRef = E856711F4B46CE3E48ABDA23 /* LogRollerServer */; };
+		A4C83A68DE3800F2BA99F2FA /* LogRollerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19798EDC2C81D7AA6C1DBF7B /* LogRollerApp.swift */; };
+		D10F596EDF070F2B33DA9CBC /* LogRollerAppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49E7C0ECA1CC7C8DF06773B /* LogRollerAppSmokeTests.swift */; };
+		E08A86CC796C08FDB70A4B96 /* LogRollerServer in Frameworks */ = {isa = PBXBuildFile; productRef = E3E85E3D486145359E7616A9 /* LogRollerServer */; };
+		FBAEFBAF5B8B6FC6CD52F495 /* LogRollerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 83E7C7C193DAB1569BF235A0 /* LogRollerCore */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5397797BE20A6B12F0156F0C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 11EC3C7E41BA7F4DCF5E3F59 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF86F92CFA5855A689D5CD6C;
+			remoteInfo = LogRollerApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		19798EDC2C81D7AA6C1DBF7B /* LogRollerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogRollerApp.swift; sourceTree = "<group>"; };
+		2B3FEFB6EF21F966B4537D98 /* Modules */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Modules; path = Modules; sourceTree = SOURCE_ROOT; };
+		3E8E0D7BE8AF9D4CF2E2B4FD /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		91A841D2751AF3FB9390A483 /* logroller */ = {isa = PBXFileReference; includeInIndex = 0; path = logroller; sourceTree = BUILT_PRODUCTS_DIR; };
+		97ADF93E83874B951D83ED30 /* WindowCloseInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCloseInterceptor.swift; sourceTree = "<group>"; };
+		ADA579E072A1FD70095F6A66 /* LogRollerApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LogRollerApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3AF903CFFA81D27D02A5E60 /* LogRollerAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LogRollerAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C49E7C0ECA1CC7C8DF06773B /* LogRollerAppSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogRollerAppSmokeTests.swift; sourceTree = "<group>"; };
+		ED9F827CAC2D3A20C7098520 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EE852C85727E36C18425F0CD /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
+		F9BFA65B3C1ECAE3E1CED8D4 /* LogRollerCLI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogRollerCLI.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7886BD9C2B82B99465887600 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FBAEFBAF5B8B6FC6CD52F495 /* LogRollerCore in Frameworks */,
+				81F6A322066A95115E64E457 /* LogRollerServer in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EC248466A17054AB716A80FB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69E09A6A20F0670EAB73DCA3 /* LogRollerCore in Frameworks */,
+				E08A86CC796C08FDB70A4B96 /* LogRollerServer in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		113BDF274226D1794CD0CE55 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				91A841D2751AF3FB9390A483 /* logroller */,
+				ADA579E072A1FD70095F6A66 /* LogRollerApp.app */,
+				B3AF903CFFA81D27D02A5E60 /* LogRollerAppTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2811E30031A1C2CAAFFCF02D = {
+			isa = PBXGroup;
+			children = (
+				57235C3110F3A38FF5A1907E /* Packages */,
+				D202ECF6465E7D368D88E8A5 /* Sources */,
+				D2C87A7A3472A47EA778EB54 /* Sources */,
+				99E3F628FAEE402856BE7F6E /* Tests */,
+				113BDF274226D1794CD0CE55 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		57235C3110F3A38FF5A1907E /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				2B3FEFB6EF21F966B4537D98 /* Modules */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		99E3F628FAEE402856BE7F6E /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				C49E7C0ECA1CC7C8DF06773B /* LogRollerAppSmokeTests.swift */,
+			);
+			name = Tests;
+			path = App/Tests;
+			sourceTree = "<group>";
+		};
+		D202ECF6465E7D368D88E8A5 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				3E8E0D7BE8AF9D4CF2E2B4FD /* AppModel.swift */,
+				ED9F827CAC2D3A20C7098520 /* Assets.xcassets */,
+				19798EDC2C81D7AA6C1DBF7B /* LogRollerApp.swift */,
+				EE852C85727E36C18425F0CD /* MainWindowView.swift */,
+				97ADF93E83874B951D83ED30 /* WindowCloseInterceptor.swift */,
+			);
+			name = Sources;
+			path = App/Sources;
+			sourceTree = "<group>";
+		};
+		D2C87A7A3472A47EA778EB54 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				F9BFA65B3C1ECAE3E1CED8D4 /* LogRollerCLI.swift */,
+			);
+			name = Sources;
+			path = CLI/Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		176F24F6A064FEFC5F752AFB /* logroller */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D5359A46150227F2D45FDF07 /* Build configuration list for PBXNativeTarget "logroller" */;
+			buildPhases = (
+				442C978E94241C6C88F8F04A /* Sources */,
+				7886BD9C2B82B99465887600 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = logroller;
+			packageProductDependencies = (
+				83E7C7C193DAB1569BF235A0 /* LogRollerCore */,
+				E856711F4B46CE3E48ABDA23 /* LogRollerServer */,
+			);
+			productName = logroller;
+			productReference = 91A841D2751AF3FB9390A483 /* logroller */;
+			productType = "com.apple.product-type.tool";
+		};
+		93EBE0C24086BBE94557A928 /* LogRollerAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BEBFB9A0C776BA92EF45E81C /* Build configuration list for PBXNativeTarget "LogRollerAppTests" */;
+			buildPhases = (
+				3014C7B3063CAD222E52C5D1 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				33ED8B031D0F8D1F4A481B99 /* PBXTargetDependency */,
+			);
+			name = LogRollerAppTests;
+			packageProductDependencies = (
+			);
+			productName = LogRollerAppTests;
+			productReference = B3AF903CFFA81D27D02A5E60 /* LogRollerAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		CF86F92CFA5855A689D5CD6C /* LogRollerApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 46622F70DA68663744020DD5 /* Build configuration list for PBXNativeTarget "LogRollerApp" */;
+			buildPhases = (
+				F4A70B855AF887543D69B3A6 /* Sources */,
+				FC4A76779A570761743BBB3B /* Resources */,
+				EC248466A17054AB716A80FB /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LogRollerApp;
+			packageProductDependencies = (
+				C0E978A0611046D7B2723B38 /* LogRollerCore */,
+				E3E85E3D486145359E7616A9 /* LogRollerServer */,
+			);
+			productName = LogRollerApp;
+			productReference = ADA579E072A1FD70095F6A66 /* LogRollerApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		11EC3C7E41BA7F4DCF5E3F59 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					176F24F6A064FEFC5F752AFB = {
+						DevelopmentTeam = 8U7J5S7RGC;
+						ProvisioningStyle = Automatic;
+					};
+					93EBE0C24086BBE94557A928 = {
+						DevelopmentTeam = 8U7J5S7RGC;
+						ProvisioningStyle = Automatic;
+					};
+					CF86F92CFA5855A689D5CD6C = {
+						DevelopmentTeam = 8U7J5S7RGC;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 267FEBF39254BAF1613BE065 /* Build configuration list for PBXProject "LogRoller" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 2811E30031A1C2CAAFFCF02D;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FB2B0AF90E679AAB25F79934 /* XCLocalSwiftPackageReference "Modules" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CF86F92CFA5855A689D5CD6C /* LogRollerApp */,
+				93EBE0C24086BBE94557A928 /* LogRollerAppTests */,
+				176F24F6A064FEFC5F752AFB /* logroller */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FC4A76779A570761743BBB3B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				41D34147A36B827A14AB0EE7 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3014C7B3063CAD222E52C5D1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D10F596EDF070F2B33DA9CBC /* LogRollerAppSmokeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		442C978E94241C6C88F8F04A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3C3EC656990FD960716308B0 /* LogRollerCLI.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4A70B855AF887543D69B3A6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				12B85BA7851BAEABC56FDB24 /* AppModel.swift in Sources */,
+				A4C83A68DE3800F2BA99F2FA /* LogRollerApp.swift in Sources */,
+				299EE3FC34CE44FE708AABFF /* MainWindowView.swift in Sources */,
+				3C80CACD2EC74247A1A49615 /* WindowCloseInterceptor.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		33ED8B031D0F8D1F4A481B99 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF86F92CFA5855A689D5CD6C /* LogRollerApp */;
+			targetProxy = 5397797BE20A6B12F0156F0C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		015AC4CE989763838AE4413A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.akuaku.logroller;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		3ABC60B5D43AE55A03C15C90 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LogRoller;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.akuaku.LogRollerApp;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		5C1D8B0D09909914C8452043 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LogRollerApp.app/Contents/MacOS/LogRollerApp";
+			};
+			name = Release;
+		};
+		7233550C5CFA2AE0CBE29D82 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 8U7J5S7RGC;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		BC78E39E5DB094F0FA11833E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LogRoller;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.akuaku.LogRollerApp;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		DCECB70D7CE72F12CE372970 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.akuaku.logroller;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		E19234D1169B7F1E8042A243 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LogRollerApp.app/Contents/MacOS/LogRollerApp";
+			};
+			name = Debug;
+		};
+		E4845F71EE6F77D54D2BA460 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 8U7J5S7RGC;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		267FEBF39254BAF1613BE065 /* Build configuration list for PBXProject "LogRoller" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E4845F71EE6F77D54D2BA460 /* Debug */,
+				7233550C5CFA2AE0CBE29D82 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		46622F70DA68663744020DD5 /* Build configuration list for PBXNativeTarget "LogRollerApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3ABC60B5D43AE55A03C15C90 /* Debug */,
+				BC78E39E5DB094F0FA11833E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BEBFB9A0C776BA92EF45E81C /* Build configuration list for PBXNativeTarget "LogRollerAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E19234D1169B7F1E8042A243 /* Debug */,
+				5C1D8B0D09909914C8452043 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D5359A46150227F2D45FDF07 /* Build configuration list for PBXNativeTarget "logroller" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				015AC4CE989763838AE4413A /* Debug */,
+				DCECB70D7CE72F12CE372970 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		FB2B0AF90E679AAB25F79934 /* XCLocalSwiftPackageReference "Modules" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		83E7C7C193DAB1569BF235A0 /* LogRollerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LogRollerCore;
+		};
+		C0E978A0611046D7B2723B38 /* LogRollerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LogRollerCore;
+		};
+		E3E85E3D486145359E7616A9 /* LogRollerServer */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LogRollerServer;
+		};
+		E856711F4B46CE3E48ABDA23 /* LogRollerServer */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LogRollerServer;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 11EC3C7E41BA7F4DCF5E3F59 /* Project object */;
+}
