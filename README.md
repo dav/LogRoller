@@ -16,7 +16,7 @@ And your agent will respond _"Let me run logroller to see what happened...."_
 - Stores and organizes logs by run and device.
 - Provides desktop browsing/filtering for collected logs.
 - Exposes a CLI designed for automation and AI-agent workflows.
-- Includes a ready-made [SKILL.md](https://github.com/dav/LogRoller/blob/main/skills/logroller-client-integration/SKILL.md) file
+- Includes a ready-made [SKILL.md](https://github.com/dav/LogRoller/blob/main/skills/logroller-client-integration/SKILL.md) file that lets the agent set up the necessary event emitting code and then examine the events.
 
 <img width="1458" height="575" alt="image" src="https://github.com/user-attachments/assets/ec30eaa7-7c53-455a-9c98-5bd0af6db67e" />
 
