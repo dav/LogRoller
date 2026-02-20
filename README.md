@@ -10,7 +10,35 @@ It was initially built to give coding agents a skill that could access event log
 - Stores and organizes logs by run and device.
 - Provides desktop browsing/filtering for collected logs.
 - Exposes a CLI designed for automation and AI-agent workflows.
-- Includes a ready-made Skill file
+- Includes a ready-made [SKILL.md](https://github.com/dav/LogRoller/blob/main/skills/logroller-client-integration/SKILL.md) file
+
+## Setup
+
+Because of my initial need of collecting data from iPhones running a PWA app in Safari, this uses https/SSL. Currently you'll need to manually set up a root certificate authority on your Mac, and then make it trusted on any clients. It's not too hard, ask your agent about mkcert.
+
+Launching the app starts the webserver on 8443. There's no auth or security.
+
+Once the SKILL.md is made available to your agent, you can ask the agent to add the necessary code to your project.
+
+You and the agent can run `logroller ingest-help` for info on how this works.
+
+You can also test manually using curl:
+```
+$ curl https://127.0.0.1:8443/healthz
+
+$ curl -sS https://192.168.1.123:8443/ingest \
+    -H "Content-Type: application/json" \
+    -X POST \
+    -d '{
+          "ts":"2026-02-19T20:15:01.123Z",
+          "level":"info",
+          "event":"client.custom_event",
+          "run_id":"run_curl_test",
+          "device_id":"curl_client_01",
+          "seq":1,
+          "payload":{"anything":"goes","nested":{"x":1,"flag":true}}
+        }'        
+```
 
 ## License
 
