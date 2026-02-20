@@ -1,5 +1,7 @@
 # LogRoller
 
+<img width="128" height="128" alt="icon_128x128" src="https://github.com/dav/LogRoller/blob/main/App/Sources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png?raw=true" />
+
 LogRoller is a macOS app and CLI for collecting and analyzing structured test logs from devices on your local network.
 
 It was initially built to give coding agents a skill that could access event logs from under-develop code running on local test devices. This allows the agents to examine how the code being produced is behaving in manual test runs.
@@ -11,6 +13,10 @@ It was initially built to give coding agents a skill that could access event log
 - Provides desktop browsing/filtering for collected logs.
 - Exposes a CLI designed for automation and AI-agent workflows.
 - Includes a ready-made [SKILL.md](https://github.com/dav/LogRoller/blob/main/skills/logroller-client-integration/SKILL.md) file
+
+<img width="1458" height="575" alt="image" src="https://github.com/user-attachments/assets/ec30eaa7-7c53-455a-9c98-5bd0af6db67e" />
+
+It's not much to look at, but this isn't really for you. It's for your agent.
 
 ## Setup
 
