@@ -8,7 +8,7 @@ It was initially built to give coding agents a skill that could access event log
 
 So you can go to your agent and say _"hey those last changes you made don't seem to be working. I just did a test run between the two devices and the transfer didn't succeed."_
 
-And you agent will respond _"Let me run logroller to see what happened...."_
+And your agent will respond _"Let me run logroller to see what happened...."_
 
 ## What It Does
 
