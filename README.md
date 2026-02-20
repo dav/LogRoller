@@ -57,7 +57,7 @@ This repository is licensed under [PolyForm Small Business License 1.0.0](https:
 - Personal use and qualifying small-business use are permitted.
 - Larger organizations that do not qualify under the license need a separate commercial license.
 
-See `/Users/dav/code/LogRoller/LICENSE` for full terms.
+See `LICENSE` file in project root for full terms.
 
 ## Commercial Licensing
 
