@@ -22,10 +22,15 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.akuaku.LogRollerApp
+        PRODUCT_NAME: LogRoller
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: LogRoller
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: App/Sources/LogRoller.entitlements
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 5
     dependencies:
       - package: LogRollerModules
         product: LogRollerCore

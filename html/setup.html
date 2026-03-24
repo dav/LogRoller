@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>LogRoller - Setup Guide</title>
+        <style>
+            :root {
+                color-scheme: light dark;
+                --bg: #0d1117;
+                --card: #161b22;
+                --text: #e6edf3;
+                --muted: #8b949e;
+                --accent: #58a6ff;
+                --border: #30363d;
+                --code-bg: #0d1117;
+                --code-border: #30363d;
+                --green: #3fb950;
+            }
+
+            @media (prefers-color-scheme: light) {
+                :root {
+                    --bg: #f4f6f8;
+                    --card: #ffffff;
+                    --text: #1f2933;
+                    --muted: #52606d;
+                    --accent: #0f766e;
+                    --border: #d9e2ec;
+                    --code-bg: #f0f4f8;
+                    --code-border: #d9e2ec;
+                    --green: #16a34a;
+                }
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                background: var(--bg);
+                color: var(--text);
+                font:
+                    16px/1.65 -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    sans-serif;
+                padding: 2rem 1rem;
+            }
+
+            .page {
+                width: min(850px, 100%);
+                margin: 0 auto;
+            }
+
+            h1 {
+                font-size: clamp(1.7rem, 3vw, 2.2rem);
+                margin-bottom: 0.5rem;
+            }
+            h2 {
+                font-size: 1.25rem;
+                margin: 2rem 0 0.75rem;
+            }
+            h3 {
+                font-size: 1.05rem;
+                margin: 1.25rem 0 0.5rem;
+            }
+
+            p,
+            li {
+                color: var(--muted);
+            }
+            p + p {
+                margin-top: 0.75rem;
+            }
+            strong {
+                color: var(--text);
+            }
+            a {
+                color: var(--accent);
+            }
+
+            .card {
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 1.75rem;
+                margin-bottom: 1.5rem;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            }
+
+            code {
+                font-family: "SF Mono", "Menlo", "Monaco", monospace;
+                font-size: 0.9em;
+                background: var(--code-bg);
+                border: 1px solid var(--code-border);
+                border-radius: 4px;
+                padding: 0.15em 0.4em;
+            }
+
+            pre {
+                background: var(--code-bg);
+                border: 1px solid var(--code-border);
+                border-radius: 8px;
+                padding: 1rem;
+                overflow-x: auto;
+                margin: 0.75rem 0;
+                font-family: "SF Mono", "Menlo", "Monaco", monospace;
+                font-size: 0.88rem;
+                line-height: 1.5;
+                color: var(--text);
+            }
+
+            .step-num {
+                display: inline-block;
+                width: 1.6rem;
+                height: 1.6rem;
+                line-height: 1.6rem;
+                text-align: center;
+                border-radius: 50%;
+                background: var(--accent);
+                color: #fff;
+                font-size: 0.8rem;
+                font-weight: 700;
+                margin-right: 0.5rem;
+                flex-shrink: 0;
+            }
+
+            .prereq-list {
+                list-style: none;
+                padding: 0;
+            }
+            .prereq-list li {
+                padding: 0.5rem 0;
+                border-bottom: 1px solid var(--border);
+                color: var(--text);
+            }
+            .prereq-list li:last-child {
+                border-bottom: none;
+            }
+
+            .check-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 0.4rem 0;
+                color: var(--muted);
+            }
+
+            .check-item code {
+                font-size: 0.85em;
+            }
+
+            .back {
+                display: inline-block;
+                margin-bottom: 1rem;
+                color: var(--accent);
+                text-decoration: none;
+            }
+            .back:hover {
+                text-decoration: underline;
+            }
+
+            .footer {
+                margin-top: 2rem;
+                text-align: center;
+                color: var(--muted);
+                font-size: 0.85rem;
+            }
+            .footer a {
+                color: var(--accent);
+                text-decoration: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            <a href="index.html" class="back">&larr; Back to LogRoller</a>
+
+            <h1>Setup Guide</h1>
+            <p>Get LogRoller running on your Mac in a few minutes.</p>
+
+            <!-- Prerequisites -->
+            <div class="card">
+                <h2>Prerequisites</h2>
+                <ul class="prereq-list">
+                    <li><strong>macOS 15+</strong> (Sequoia or later)</li>
+                    <li>
+                        <strong>Claude Code</strong> installed and authenticated
+                        (for the integration skill)
+                    </li>
+                    <li>
+                        <strong>LogRoller DMG</strong> &mdash;
+                        <a href="LogRoller.dmg.zip">download here</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Step 1: Install -->
+            <div class="card">
+                <h2><span class="step-num">1</span> Download and Install</h2>
+                <p style="margin-bottom: 0.75rem">
+                    <a
+                        href="LogRoller.dmg.zip"
+                        style="font-weight: 600; font-size: 1.05em"
+                        >Download LogRoller.dmg.zip</a
+                    >
+                </p>
+                <p>Unzip the download and open the DMG:</p>
+                <pre>
+unzip LogRoller.dmg.zip
+open LogRoller.dmg</pre
+                >
+                <p>
+                    The DMG contains <strong>LogRoller.app</strong>, the
+                    <code>logroller</code> CLI binary, a Claude Code skill file,
+                    and an install script. You can either:
+                </p>
+                <ul>
+                    <li>
+                        <strong>Drag and drop</strong> &mdash; drag
+                        LogRoller.app to the Applications symlink in the DMG,
+                        then manually copy the CLI and skill (see step 2).
+                    </li>
+                    <li>
+                        <strong>Run the install script</strong> &mdash; this
+                        does everything automatically (see below).
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Step 2: Install script -->
+            <div class="card">
+                <h2><span class="step-num">2</span> Run the Install Script</h2>
+                <p>With the DMG mounted, open Terminal and run:</p>
+                <pre>bash /Volumes/LogRoller/install.sh</pre>
+                <p>The install script will:</p>
+                <ul>
+                    <li>
+                        Copy <strong>LogRoller.app</strong> to
+                        <code>/Applications/</code>
+                    </li>
+                    <li>
+                        Copy the <strong>logroller</strong> CLI to
+                        <code>~/bin/</code>
+                    </li>
+                    <li>
+                        Install the <strong>Claude Code skill</strong> to
+                        <code
+                            >~/.claude/skills/logroller-client-integration/</code
+                        >
+                    </li>
+                </ul>
+                <p style="margin-top: 0.75rem">
+                    Make sure <code>~/bin</code> is in your <code>PATH</code>.
+                    If not, add it to your shell profile:
+                </p>
+                <pre>
+# For zsh (default on macOS):
+echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc
+
+# For fish:
+fish_add_path ~/bin</pre
+                >
+            </div>
+
+            <!-- Step 3: Launch -->
+            <div class="card">
+                <h2><span class="step-num">3</span> Launch LogRoller</h2>
+                <p>
+                    Open <strong>LogRoller</strong> from
+                    <code>/Applications</code>. The app starts an HTTPS server
+                    on port 8443 that listens for incoming events. The server
+                    runs in the background even when the window is closed.
+                </p>
+                <p>
+                    You won't really need to interact with the LogRoller GUI
+                    much. The point of this system is really just to give your
+                    code agents access to the CLI commands so they can check
+                    logs themselves without you needing to copy/paste info for
+                    them.
+                </p>
+            </div>
+
+            <!-- Step 4: Verify -->
+            <div class="card">
+                <h2><span class="step-num">4</span> Verify Everything Works</h2>
+                <p>Open a new terminal and run these checks:</p>
+
+                <div class="check-item">
+                    <strong>Server status:</strong>
+                    <code>logroller status</code> &mdash; should show
+                    <code>"server_active": true</code>
+                </div>
+
+                <div class="check-item">
+                    <strong>Ingest contract:</strong>
+                    <code>logroller ingest-help</code> &mdash; shows the
+                    endpoint, required fields, and cURL examples
+                </div>
+
+                <h3 style="margin-top: 1.25rem">Send a test event</h3>
+                <pre>
+curl -sk https://localhost:8443/ingest \
+  -H "Content-Type: application/json" \
+  -d '[{
+    "run_id": "test-run",
+    "device_id": "my-mac",
+    "event_type": "log",
+    "level": "info",
+    "message": "Hello from LogRoller"
+  }]'</pre
+                >
+
+                <h3 style="margin-top: 1.25rem">Query the event</h3>
+                <pre>logroller events --run test-run --json</pre>
+                <p>
+                    You should see the event you just sent, with a timestamp and
+                    the fields you provided.
+                </p>
+            </div>
+
+            <!-- Using with Claude Code -->
+            <div class="card">
+                <h2>Using with Claude Code</h2>
+                <p>
+                    The install script adds a Claude Code skill that teaches the
+                    agent how to integrate client logging with LogRoller. In any
+                    project, ask Claude to:
+                </p>
+                <pre>Wire this app to send events to LogRoller</pre>
+                <p>
+                    The agent will use the skill to discover the ingest
+                    contract, implement the client, and verify events are
+                    flowing.
+                </p>
+                <p>
+                    Later when you and Claude have deployed new code to your
+                    test device and something has gone wrong, you can tell
+                    Claude:
+                </p>
+                <pre>
+Something went wrong, can you check the logs for the last test run?</pre
+                >
+                <p>
+                    Claude will then be able to research the issue directly even
+                    though it does not have diredct access to the device logs.
+                </p>
+            </div>
+
+            <!-- Troubleshooting -->
+            <div class="card">
+                <h2>Troubleshooting</h2>
+
+                <h3>"Connection refused" from logroller status</h3>
+                <p>
+                    The LogRoller app isn't running. Launch it from
+                    <code>/Applications</code> and wait a few seconds for the
+                    server to start.
+                </p>
+
+                <h3>Certificate warnings from curl</h3>
+                <p>
+                    LogRoller uses a self-signed TLS certificate. Use the
+                    <code>-k</code> flag with curl to skip verification, or set
+                    up mkcert for trusted local certificates.
+                </p>
+
+                <h3>CLI not found</h3>
+                <p>
+                    Make sure <code>~/bin</code> is in your PATH and restart
+                    your terminal (or run <code>source ~/.zshrc</code>).
+                </p>
+            </div>
+
+            <footer class="footer">
+                <p>
+                    <a href="index.html">Home</a>
+                    &nbsp;&middot;&nbsp;
+                    <a href="privacy-policy.html">Privacy Policy</a>
+                    &nbsp;&middot;&nbsp;
+                    <a href="mailto:logroller-support@akuaku.org">Support</a>
+                </p>
+            </footer>
+        </div>
+    </body>
+</html>
