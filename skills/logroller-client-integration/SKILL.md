@@ -76,11 +76,16 @@ Recommended fields:
 
 ## Validation Checklist
 1. Send a known test event from the client.
-2. Verify CLI status:
+2. Verify CLI status and confirm the HTTPS server is actually reachable:
 
 ```bash
 logroller status
 ```
+
+   Treat this as a hard gate before querying events:
+   - `server_active` must be `true`
+   - If `server_active` is `false`, read `server_error` and stop to fix server availability first
+   - Optional diagnostics: `active_base_url`, `health_url`, `health_status_code`
 
 3. Verify events are present for that device:
 

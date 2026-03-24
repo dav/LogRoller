@@ -3,6 +3,8 @@ import LogRollerCore
 
 @main
 struct LogRollerCLI {
+    private static let defaultServerPort: UInt16 = 8443
+
     private enum OutputFormat {
         case markdown
         case json
@@ -79,6 +81,53 @@ struct LogRollerCLI {
         }
     }
 
+    private struct StatusResponse: Encodable {
+        var ok = true
+        var storagePath: String
+        var hasRuns: Bool
+        var serverPort: UInt16
+        var serverActive: Bool
+        var activeBaseURL: String?
+        var healthURL: String?
+        var healthStatusCode: Int?
+        var serverError: String?
+
+        enum CodingKeys: String, CodingKey {
+            case ok
+            case storagePath = "storage_path"
+            case hasRuns = "has_runs"
+            case serverPort = "server_port"
+            case serverActive = "server_active"
+            case activeBaseURL = "active_base_url"
+            case healthURL = "health_url"
+            case healthStatusCode = "health_status_code"
+            case serverError = "server_error"
+        }
+    }
+
+    private struct ServerProbeResult: Sendable {
+        var isActive: Bool
+        var baseURL: String?
+        var healthURL: String?
+        var statusCode: Int?
+        var error: String?
+    }
+
+    private struct HealthPayload: Decodable {
+        var ok: Bool
+    }
+
+    private final class LocalTLSTrustDelegate: NSObject, URLSessionDelegate {
+        func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
+            guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+                  let trust = challenge.protectionSpace.serverTrust else {
+                return (.performDefaultHandling, nil)
+            }
+
+            return (.useCredential, URLCredential(trust: trust))
+        }
+    }
+
     static func main() async {
         let arguments = Array(CommandLine.arguments.dropFirst())
 
@@ -102,22 +151,104 @@ struct LogRollerCLI {
 
     private static func printStatus() async {
         let store = makeStoreOrExit()
-
+        let probeResult = await probeServer(port: defaultServerPort)
         let runs = await store.listRuns(limit: 1)
-        let status: [String: Any] = [
-            "ok": true,
-            "storage_path": LogRollerPaths.defaultStorageRoot().path(percentEncoded: false),
-            "has_runs": !runs.isEmpty,
-        ]
+        let status = StatusResponse(
+            storagePath: LogRollerPaths.defaultStorageRoot().path(percentEncoded: false),
+            hasRuns: !runs.isEmpty,
+            serverPort: defaultServerPort,
+            serverActive: probeResult.isActive,
+            activeBaseURL: probeResult.baseURL,
+            healthURL: probeResult.healthURL,
+            healthStatusCode: probeResult.statusCode,
+            serverError: probeResult.error
+        )
 
         do {
-            let data = try JSONSerialization.data(withJSONObject: status, options: [.sortedKeys])
+            let data = try LogRollerJSONCoders.encoder.encode(status)
             if let string = String(data: data, encoding: .utf8) {
                 print(string)
             }
         } catch {
             fputs("Failed to encode status output\n", stderr)
             Foundation.exit(1)
+        }
+    }
+
+    private static func probeServer(port: UInt16) async -> ServerProbeResult {
+        let delegate = LocalTLSTrustDelegate()
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 1.5
+        configuration.timeoutIntervalForResource = 1.5
+        let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+        defer { session.invalidateAndCancel() }
+
+        var firstError: String?
+        for baseURL in probeBaseURLs(port: port) {
+            guard let url = URL(string: "\(baseURL)/healthz") else {
+                continue
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+
+            do {
+                let (data, response) = try await session.data(for: request)
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    if firstError == nil {
+                        firstError = "Received non-HTTP response from \(url.absoluteString)."
+                    }
+                    continue
+                }
+
+                guard httpResponse.statusCode == 200 else {
+                    if firstError == nil {
+                        firstError = "Health check returned HTTP \(httpResponse.statusCode) at \(url.absoluteString)."
+                    }
+                    continue
+                }
+
+                if let payload = try? LogRollerJSONCoders.decoder.decode(HealthPayload.self, from: data),
+                   payload.ok {
+                    return ServerProbeResult(
+                        isActive: true,
+                        baseURL: baseURL,
+                        healthURL: url.absoluteString,
+                        statusCode: httpResponse.statusCode,
+                        error: nil
+                    )
+                }
+
+                if firstError == nil {
+                    firstError = "Health check did not return expected payload at \(url.absoluteString)."
+                }
+            } catch {
+                if firstError == nil {
+                    firstError = "Unable to reach \(url.absoluteString): \(error.localizedDescription)"
+                }
+            }
+        }
+
+        return ServerProbeResult(
+            isActive: false,
+            baseURL: nil,
+            healthURL: nil,
+            statusCode: nil,
+            error: firstError ?? "No reachable LogRoller HTTPS health endpoint found."
+        )
+    }
+
+    private static func probeBaseURLs(port: UInt16) -> [String] {
+        var seen: Set<String> = []
+        let preferredLocalBaseURLs = [
+            "https://localhost:\(port)",
+            "https://127.0.0.1:\(port)",
+            "https://[::1]:\(port)",
+        ]
+
+        return (preferredLocalBaseURLs + LogRollerNetwork.ingestBaseURLs(port: port)).filter { baseURL in
+            seen.insert(baseURL).inserted
         }
     }
 
@@ -201,9 +332,8 @@ struct LogRollerCLI {
             Foundation.exit(1)
         }
 
-        let defaultPort: UInt16 = 8443
-        let candidateBaseURLs = LogRollerNetwork.ingestBaseURLs(port: defaultPort)
-        let baseURL = candidateBaseURLs.first ?? "https://localhost:\(defaultPort)"
+        let candidateBaseURLs = LogRollerNetwork.ingestBaseURLs(port: defaultServerPort)
+        let baseURL = candidateBaseURLs.first ?? "https://localhost:\(defaultServerPort)"
         let curlBatchExample = """
         curl --cacert "$HOME/Library/Application Support/mkcert/rootCA.pem" \\
           -H "Content-Type: application/json" \\
@@ -279,7 +409,7 @@ struct LogRollerCLI {
             let response = IngestHelpResponse(
                 baseURL: baseURL,
                 candidateBaseURLs: candidateBaseURLs,
-                defaultPort: defaultPort,
+                defaultPort: defaultServerPort,
                 endpoint: "/ingest",
                 method: "POST",
                 contentType: "application/json",
