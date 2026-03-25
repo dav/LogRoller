@@ -74,6 +74,37 @@ Recommended fields:
 
 - If there is no run/device ID available, still send events; LogRoller can fallback-generate identifiers.
 
+## URLSession Lifecycle on iOS / visionOS
+
+> **Warning:** On platforms where the OS suspends apps (iOS, visionOS), `URLSession` instances can be **invalidated by the OS** during app suspension. If the flush timer fires after this, calling `session.data(for:)` on the invalidated session throws an ObjC `NSGenericException` ("Task created in a session that has been invalidated") which is **not catchable by Swift `do`/`catch`** — it causes a fatal crash.
+
+When implementing the LogRoller transport on Apple platforms:
+
+1. **Create sessions lazily** — do not create the `URLSession` in `configure()`. Instead, create it on-demand in a helper (e.g., `ensureSession()`) called at flush time.
+2. **Recreate on failure** — in the `catch` block of `flush()`, `nil` out the session reference. The next flush will create a fresh session automatically.
+3. **Do not call `invalidateAndCancel()`** — the shutdown path should cancel the flush timer and let the session be deallocated naturally. Calling `invalidateAndCancel()` introduces a race where a queued flush or emit can use the session after invalidation.
+
+```swift
+// Example pattern
+private var session: URLSession?
+
+private func ensureSession() -> URLSession {
+    if let s = session { return s }
+    let s = URLSession(configuration: .default)
+    session = s
+    return s
+}
+
+func flush() async {
+    let s = ensureSession()
+    do {
+        let (_, _) = try await s.data(for: request)
+    } catch {
+        session = nil  // force recreation on next flush
+    }
+}
+```
+
 ## Validation Checklist
 1. Send a known test event from the client.
 2. Verify CLI status and confirm the HTTPS server is actually reachable:
