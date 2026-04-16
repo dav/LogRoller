@@ -21,6 +21,31 @@ struct LogRollerCLI {
         var outputFormat: OutputFormat = .markdown
     }
 
+    private struct RunsOptions {
+        var limit: Int = 5
+        var useNDJSON = false
+    }
+
+    private struct RunEntry: Encodable {
+        var runID: String
+        var createdAt: Date
+        var updatedAt: Date
+        var deviceIDs: [String]
+
+        enum CodingKeys: String, CodingKey {
+            case runID = "run_id"
+            case createdAt = "created_at"
+            case updatedAt = "updated_at"
+            case deviceIDs = "device_ids"
+        }
+    }
+
+    private struct RunsResponse: Encodable {
+        var ok = true
+        var count: Int
+        var runs: [RunEntry]
+    }
+
     private struct EventsResponse: Encodable {
         var ok = true
         var runID: String
@@ -141,6 +166,8 @@ struct LogRollerCLI {
             await printStatus()
         case "events":
             await printEvents(arguments: Array(arguments.dropFirst()))
+        case "runs":
+            await printRuns(arguments: Array(arguments.dropFirst()))
         case "ingest-help":
             printIngestHelp(arguments: Array(arguments.dropFirst()))
         default:
@@ -322,6 +349,65 @@ struct LogRollerCLI {
         }
     }
 
+    private static func printRuns(arguments: [String]) async {
+        if arguments.contains("--help") {
+            printUsage()
+            return
+        }
+
+        let options: RunsOptions
+        do {
+            options = try parseRunsOptions(arguments)
+        } catch {
+            fputs("\(error.localizedDescription)\n", stderr)
+            printUsage()
+            Foundation.exit(1)
+        }
+
+        let store = makeStoreOrExit()
+        let summaries = await store.listRuns(limit: options.limit)
+
+        var entries: [RunEntry] = []
+        entries.reserveCapacity(summaries.count)
+        for summary in summaries {
+            let devices = await store.listDevices(runID: summary.runID)
+            entries.append(
+                RunEntry(
+                    runID: summary.runID,
+                    createdAt: summary.createdAt,
+                    updatedAt: summary.updatedAt,
+                    deviceIDs: devices.map { $0.deviceID }
+                )
+            )
+        }
+
+        if options.useNDJSON {
+            for entry in entries {
+                do {
+                    let data = try LogRollerJSONCoders.encoder.encode(entry)
+                    if let line = String(data: data, encoding: .utf8) {
+                        print(line)
+                    }
+                } catch {
+                    fputs("Failed to encode run row: \(error.localizedDescription)\n", stderr)
+                    Foundation.exit(1)
+                }
+            }
+            return
+        }
+
+        let response = RunsResponse(count: entries.count, runs: entries)
+        do {
+            let data = try LogRollerJSONCoders.encoder.encode(response)
+            if let string = String(data: data, encoding: .utf8) {
+                print(string)
+            }
+        } catch {
+            fputs("Failed to encode runs output: \(error.localizedDescription)\n", stderr)
+            Foundation.exit(1)
+        }
+    }
+
     private static func printIngestHelp(arguments: [String]) {
         let options: IngestHelpOptions
         do {
@@ -490,6 +576,34 @@ struct LogRollerCLI {
         return options
     }
 
+    private static func parseRunsOptions(_ arguments: [String]) throws -> RunsOptions {
+        var options = RunsOptions()
+        var index = 0
+
+        while index < arguments.count {
+            let argument = arguments[index]
+            switch argument {
+            case "--limit":
+                let value = try value(after: argument, in: arguments, at: index)
+                guard let limit = Int(value), limit > 0 else {
+                    throw CLIError.invalidOption("Invalid value for --limit: \(value)")
+                }
+                options.limit = limit
+                index += 2
+            case "--ndjson":
+                options.useNDJSON = true
+                index += 1
+            case "--json":
+                options.useNDJSON = false
+                index += 1
+            default:
+                throw CLIError.invalidOption("Unknown option: \(argument)")
+            }
+        }
+
+        return options
+    }
+
     private static func parseIngestHelpOptions(_ arguments: [String]) throws -> IngestHelpOptions {
         var options = IngestHelpOptions()
         var index = 0
@@ -550,12 +664,14 @@ struct LogRollerCLI {
         print("""
         Usage:
           logroller status
+          logroller runs [--limit <n>] [--json|--ndjson]
           logroller events [--run <run_id>] [--device <device_id>] [--limit <n>] [--json|--ndjson]
           logroller ingest-help [--markdown|--json]
 
         Notes:
+          - runs lists runs in reverse updated-at order; default --limit is 5.
           - If --run is omitted, the latest run is used.
-          - Output defaults to JSON; use --ndjson for one-event-per-line output.
+          - Output defaults to JSON; use --ndjson for one-row-per-line output.
           - ingest-help defaults to Markdown output.
         """)
     }
