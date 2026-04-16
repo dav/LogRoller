@@ -17,6 +17,8 @@ public struct IncomingEvent: Codable, Sendable, Equatable {
     public var payload: JSONValue
     public var app: JSONValue?
     public var context: JSONValue?
+    public var resources: JSONValue?
+    public var traceID: String?
 
     public init(
         ts: Date,
@@ -27,7 +29,9 @@ public struct IncomingEvent: Codable, Sendable, Equatable {
         seq: Int? = nil,
         payload: JSONValue,
         app: JSONValue? = nil,
-        context: JSONValue? = nil
+        context: JSONValue? = nil,
+        resources: JSONValue? = nil,
+        traceID: String? = nil
     ) {
         self.ts = ts
         self.level = level
@@ -38,6 +42,8 @@ public struct IncomingEvent: Codable, Sendable, Equatable {
         self.payload = payload
         self.app = app
         self.context = context
+        self.resources = resources
+        self.traceID = traceID
     }
 
     enum CodingKeys: String, CodingKey {
@@ -50,6 +56,8 @@ public struct IncomingEvent: Codable, Sendable, Equatable {
         case payload
         case app
         case context
+        case resources
+        case traceID = "trace_id"
     }
 }
 
@@ -83,6 +91,8 @@ public struct StoredEvent: Codable, Sendable, Equatable, Identifiable {
     public var payload: JSONValue
     public var app: JSONValue?
     public var context: JSONValue?
+    public var resources: JSONValue?
+    public var traceID: String?
 
     public init(
         id: UUID = UUID(),
@@ -95,7 +105,9 @@ public struct StoredEvent: Codable, Sendable, Equatable, Identifiable {
         seq: Int?,
         payload: JSONValue,
         app: JSONValue?,
-        context: JSONValue?
+        context: JSONValue?,
+        resources: JSONValue? = nil,
+        traceID: String? = nil
     ) {
         self.id = id
         self.runID = runID
@@ -108,6 +120,8 @@ public struct StoredEvent: Codable, Sendable, Equatable, Identifiable {
         self.payload = payload
         self.app = app
         self.context = context
+        self.resources = resources
+        self.traceID = traceID
     }
 
     enum CodingKeys: String, CodingKey {
@@ -122,6 +136,8 @@ public struct StoredEvent: Codable, Sendable, Equatable, Identifiable {
         case payload
         case app
         case context
+        case resources
+        case traceID = "trace_id"
     }
 }
 

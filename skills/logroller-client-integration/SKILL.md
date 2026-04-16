@@ -37,8 +37,11 @@ Each event must contain:
 Recommended fields:
 - `run_id` (same for all clients in a test run)
 - `device_id` (stable identifier)
-- `seq` (monotonic integer per device per run)
-- `app`, `context` (metadata)
+- `seq` (monotonic integer per device per run — enables drop/dup/out-of-order detection)
+- `app` (build metadata: `name`, `version`, `build`, `env`)
+- `context` (runtime env: `url`, `visibility`, `userAgent`)
+- `resources` (optional resource snapshot: `memory_bytes`, `cpu_percent`, `thread_count`, `disk_free_bytes`)
+- `trace_id` (OpenTelemetry-style correlation ID across devices/services)
 
 ## Implementation Workflow
 1. Add a LogRoller transport module in the client codebase.
@@ -118,13 +121,21 @@ logroller status
    - If `server_active` is `false`, read `server_error` and stop to fix server availability first
    - Optional diagnostics: `active_base_url`, `health_url`, `health_status_code`
 
-3. Verify events are present for that device:
+3. If you don't already know the `run_id`, list recent runs to find it:
+
+```bash
+logroller runs --limit 5
+```
+
+   Each entry includes `run_id`, `created_at`, `updated_at`, and `device_ids`. Use `--ndjson` for one-per-line output.
+
+4. Verify events are present for that device:
 
 ```bash
 logroller events --run <run_id> --device <device_id> --limit 50
 ```
 
-4. If needed for parsing pipelines, use NDJSON:
+5. If needed for parsing pipelines, use NDJSON:
 
 ```bash
 logroller events --run <run_id> --device <device_id> --limit 50 --ndjson

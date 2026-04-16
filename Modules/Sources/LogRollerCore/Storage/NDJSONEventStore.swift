@@ -47,7 +47,9 @@ public actor NDJSONEventStore: EventStore {
                 seq: incoming.seq,
                 payload: incoming.payload,
                 app: incoming.app,
-                context: incoming.context
+                context: incoming.context,
+                resources: incoming.resources,
+                traceID: incoming.traceID
             )
 
             try append(event: stored)
@@ -341,6 +343,8 @@ public actor NDJSONEventStore: EventStore {
         let payload = value(forCanonical: "payload", in: dictionary).flatMap(jsonValue(from:)) ?? .object([:])
         let app = value(forCanonical: "app", in: dictionary).flatMap(jsonValue(from:))
         let context = value(forCanonical: "context", in: dictionary).flatMap(jsonValue(from:))
+        let resources = value(forCanonical: "resources", in: dictionary).flatMap(jsonValue(from:))
+        let traceID = string(forCanonical: "traceid", in: dictionary)
 
         let id: UUID
         if let idString = string(forCanonical: "id", in: dictionary), let parsed = UUID(uuidString: idString) {
@@ -360,7 +364,9 @@ public actor NDJSONEventStore: EventStore {
             seq: seq,
             payload: payload,
             app: app,
-            context: context
+            context: context,
+            resources: resources,
+            traceID: traceID
         )
     }
 
@@ -448,6 +454,8 @@ public actor NDJSONEventStore: EventStore {
 
         let app = value(forCanonical: "app", in: dictionary).flatMap(jsonValue(from:))
         let context = value(forCanonical: "context", in: dictionary).flatMap(jsonValue(from:))
+        let resources = value(forCanonical: "resources", in: dictionary).flatMap(jsonValue(from:))
+        let traceID = string(forCanonical: "traceid", in: dictionary)
 
         let id: UUID
         if let idString = string(forCanonical: "id", in: dictionary), let parsed = UUID(uuidString: idString) {
@@ -467,7 +475,9 @@ public actor NDJSONEventStore: EventStore {
             seq: seq,
             payload: payload ?? .object([:]),
             app: app,
-            context: context
+            context: context,
+            resources: resources,
+            traceID: traceID
         )
     }
 

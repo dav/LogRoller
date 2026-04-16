@@ -453,21 +453,24 @@ struct LogRollerCLI {
               - A batch object with `run_id`, `device_id`, and `events: [...]`
 
             ## Required Event Fields
-            - `ts` (ISO-8601 UTC timestamp string)
-            - `level` (`debug` | `info` | `warn` | `error`)
-            - `event` (stable event name)
-            - `payload` (JSON object; can be `{}`)
+            - `ts` (ISO-8601 UTC timestamp string) — when the event occurred on the client.
+            - `level` (`debug` | `info` | `warn` | `error`) — severity, used for filtering/summaries.
+            - `event` (stable event name) — short dotted identifier (e.g. `rtc.connected`). Keep stable across releases so queries work.
+            - `payload` (JSON object; can be `{}`) — event-specific data. Use this for anything unique to this event type.
 
             ## Optional Event Fields
-            - `run_id` (string)
-            - `device_id` (string)
-            - `seq` (integer)
-            - `app` (object)
-            - `context` (object)
+            - `run_id` (string) — groups all devices participating in a single test run/session. Use one value across every device for the duration of a run.
+            - `device_id` (string) — stable per-device identifier (e.g. `iphone15pro_01`). Should be the same across runs for the same device.
+            - `seq` (integer) — monotonically increasing counter, per `(run_id, device_id)`. Lets LogRoller detect dropped, duplicate, or out-of-order events on a single device's stream. Start at 0 or 1 and increment by 1 per event sent.
+            - `app` (object) — metadata about the **application build** producing the event. Conventional keys: `name`, `version`, `build`, `env` (e.g. `"staging"`/`"prod"`). Stays mostly constant for the life of a process; useful for bucketing by build when diffing runs.
+            - `context` (object) — metadata about the **runtime environment** at emit time. Conventional keys: `url`, `visibility` (`foreground`/`background`), `userAgent`.
+            - `resources` (object) — optional snapshot of **host/process resource usage** at emit time. Cross-cutting telemetry (filterable without touching `payload`). Conventional keys: `memory_bytes` (int), `cpu_percent` (number), `thread_count` (int), `disk_free_bytes` (int).
+            - `trace_id` (string) — correlation ID tying related events together across devices/services (OpenTelemetry-style). Reuse the same value for every event in a logical trace.
 
             ## Fallback Behavior
-            - If `run_id` is omitted, LogRoller auto-generates one.
-            - If `device_id` is omitted, LogRoller uses `unknown_device`.
+            - If `run_id` is omitted, LogRoller auto-generates one (per batch).
+            - If `device_id` is omitted, LogRoller uses `unknown_device` — prefer sending a real value so per-device timelines work.
+            - Unknown top-level fields are accepted but not indexed; put truly arbitrary data inside `payload`.
 
             ## Success Response
             `{"ok":true,"stored":<n>,"run_id":"...","device_id":"..."}`
@@ -501,21 +504,24 @@ struct LogRollerCLI {
                 contentType: "application/json",
                 accepts: ["single_event", "batch"],
                 requiredEventFields: [
-                    .init(name: "ts", type: "string(ISO-8601 UTC)", description: "Client event timestamp."),
-                    .init(name: "level", type: "string", description: "One of debug/info/warn/error."),
-                    .init(name: "event", type: "string", description: "Stable event name."),
-                    .init(name: "payload", type: "object", description: "Arbitrary JSON object.")
+                    .init(name: "ts", type: "string(ISO-8601 UTC)", description: "Client event timestamp (when the event occurred)."),
+                    .init(name: "level", type: "string", description: "Severity: one of debug/info/warn/error. Used for filtering and summaries."),
+                    .init(name: "event", type: "string", description: "Stable dotted event name (e.g. rtc.connected). Keep stable across releases."),
+                    .init(name: "payload", type: "object", description: "Event-specific JSON object; can be {}. Use this for anything unique to this event type.")
                 ],
                 optionalEventFields: [
-                    .init(name: "run_id", type: "string", description: "Run/session identifier."),
-                    .init(name: "device_id", type: "string", description: "Stable device identifier."),
-                    .init(name: "seq", type: "integer", description: "Monotonic per-device sequence."),
-                    .init(name: "app", type: "object", description: "App metadata."),
-                    .init(name: "context", type: "object", description: "Environment/context metadata.")
+                    .init(name: "run_id", type: "string", description: "Groups all devices participating in a single test run/session. Use one value across every device for the duration of a run."),
+                    .init(name: "device_id", type: "string", description: "Stable per-device identifier (e.g. iphone15pro_01). Same across runs for the same device."),
+                    .init(name: "seq", type: "integer", description: "Monotonic counter per (run_id, device_id). Lets LogRoller detect dropped, duplicate, or out-of-order events. Start at 0 or 1 and increment by 1 per event."),
+                    .init(name: "app", type: "object", description: "Metadata about the application build producing the event. Conventional keys: name, version, build, env. Stays constant for the life of a process."),
+                    .init(name: "context", type: "object", description: "Metadata about the runtime environment at emit time. Conventional keys: url, visibility (foreground/background), userAgent."),
+                    .init(name: "resources", type: "object", description: "Optional snapshot of host/process resource usage at emit time. Conventional keys: memory_bytes (int), cpu_percent (number), thread_count (int), disk_free_bytes (int)."),
+                    .init(name: "trace_id", type: "string", description: "Correlation ID (OpenTelemetry-style) tying related events together across devices/services. Reuse the same value for every event in a logical trace.")
                 ],
                 fieldFallbacks: [
                     "run_id: auto-generated when omitted",
-                    "device_id: uses unknown_device when omitted"
+                    "device_id: uses unknown_device when omitted (prefer sending a real value)",
+                    "unknown top-level fields: accepted but not indexed; put arbitrary data inside payload"
                 ],
                 responseShape: #"{"ok":true,"stored":<n>,"run_id":"...","device_id":"..."}"#,
                 healthEndpoint: "/healthz",
