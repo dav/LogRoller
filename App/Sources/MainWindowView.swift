@@ -2,6 +2,22 @@ import SwiftUI
 import LogRollerCore
 import AppKit
 
+private func copyToPasteboard(_ value: String) {
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(value, forType: .string)
+}
+
+private func eventJSONString(for event: StoredEvent) -> String? {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+    encoder.dateEncodingStrategy = .custom { value, encoder in
+        var container = encoder.singleValueContainer()
+        try container.encode(LogRollerJSONCoders.render(date: value))
+    }
+    guard let data = try? encoder.encode(event) else { return nil }
+    return String(data: data, encoding: .utf8)
+}
+
 struct MainWindowView: View {
     @Bindable var model: AppModel
 
@@ -124,6 +140,26 @@ private struct RunDetailView: View {
             }
         }
         .navigationTitle(model.selectedRunID ?? "LogRoller")
+        .toolbar {
+            if let runID = model.selectedRunID {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 6) {
+                        Text(runID)
+                            .font(.headline)
+                            .textSelection(.enabled)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Button {
+                            copyToPasteboard(runID)
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Copy run ID")
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -160,6 +196,7 @@ private struct ServerControlBar: View {
 
             Spacer(minLength: 12)
 
+            #if DEBUG
             HStack {
                 Button("Simulate Ingest") {
                     Task {
@@ -168,17 +205,13 @@ private struct ServerControlBar: View {
                 }
             }
             .buttonStyle(.bordered)
+            #endif
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
         .background(.quinary)
         .clipShape(.rect(cornerRadius: 10))
         .padding([.top, .horizontal])
-    }
-
-    private func copyToPasteboard(_ value: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(value, forType: .string)
     }
 }
 
@@ -240,8 +273,27 @@ private struct EventList: View {
                         .textSelection(.enabled)
                         .lineLimit(3)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture(count: 2) {
+                    copyEventJSON(event)
+                }
+                .contextMenu {
+                    Button("Copy Event as JSON") {
+                        copyEventJSON(event)
+                    }
+                    Button("Copy Payload") {
+                        copyToPasteboard(payloadJSON(for: event.payload))
+                    }
+                }
+                .help("Double-click to copy event JSON")
             }
         }
+    }
+
+    private func copyEventJSON(_ event: StoredEvent) {
+        guard let json = eventJSONString(for: event) else { return }
+        copyToPasteboard(json)
     }
 
     private func sequenceLabel(for event: StoredEvent) -> String {
@@ -252,10 +304,14 @@ private struct EventList: View {
     }
 
     private func payloadString(for payload: JSONValue) -> String {
+        "payload: \(payloadJSON(for: payload))"
+    }
+
+    private func payloadJSON(for payload: JSONValue) -> String {
         guard let data = try? LogRollerJSONCoders.encoder.encode(payload),
               let text = String(data: data, encoding: .utf8) else {
             return "payload unavailable"
         }
-        return "payload: \(text)"
+        return text
     }
 }
