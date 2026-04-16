@@ -143,20 +143,13 @@ private struct RunDetailView: View {
         .toolbar {
             if let runID = model.selectedRunID {
                 ToolbarItem(placement: .principal) {
-                    HStack(spacing: 6) {
-                        Text(runID)
-                            .font(.headline)
-                            .textSelection(.enabled)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        Button {
-                            copyToPasteboard(runID)
-                        } label: {
-                            Image(systemName: "doc.on.doc")
-                        }
-                        .buttonStyle(.borderless)
-                        .help("Copy run ID")
+                    Button {
+                        copyToPasteboard(runID)
+                    } label: {
+                        Image(systemName: "doc.on.doc")
                     }
+                    .buttonStyle(.borderless)
+                    .help("Copy run ID")
                 }
             }
         }
