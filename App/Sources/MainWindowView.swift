@@ -7,6 +7,14 @@ private func copyToPasteboard(_ value: String) {
     NSPasteboard.general.setString(value, forType: .string)
 }
 
+private func payloadJSONString(for payload: JSONValue) -> String {
+    guard let data = try? LogRollerJSONCoders.encoder.encode(payload),
+          let text = String(data: data, encoding: .utf8) else {
+        return "payload unavailable"
+    }
+    return text
+}
+
 private func eventJSONString(for event: StoredEvent) -> String? {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
@@ -116,21 +124,27 @@ private struct RunSidebarView: View {
 
 private struct RunDetailView: View {
     @Bindable var model: AppModel
+    @State private var filterText: String = ""
 
     var body: some View {
+        let filteredEvents = filteredEvents(for: filterText)
         VStack(alignment: .leading, spacing: 0) {
             ServerControlBar(model: model)
             DevicePicker(model: model)
+            EventFilterField(text: $filterText)
             HStack {
                 Text("Events")
                     .font(.headline)
+                Text("(max 500 of most recent)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Spacer()
-                Text("\(model.selectedEvents.count)")
+                Text("\(filteredEvents.count)")
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal)
             .padding(.top, 8)
-            EventList(model: model)
+            EventList(model: model, events: filteredEvents, filterText: filterText)
             if let lastErrorMessage = model.lastErrorMessage {
                 Text(lastErrorMessage)
                     .font(.footnote)
@@ -152,6 +166,15 @@ private struct RunDetailView: View {
                     .help("Copy run ID")
                 }
             }
+        }
+    }
+
+    private func filteredEvents(for filter: String) -> [StoredEvent] {
+        let trimmed = filter.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return model.selectedEvents }
+        return model.selectedEvents.filter { event in
+            if event.event.localizedCaseInsensitiveContains(trimmed) { return true }
+            return payloadJSONString(for: event.payload).localizedCaseInsensitiveContains(trimmed)
         }
     }
 }
@@ -231,6 +254,12 @@ private struct DevicePicker: View {
 
 private struct EventList: View {
     @Bindable var model: AppModel
+    let events: [StoredEvent]
+    let filterText: String
+
+    private var isFiltering: Bool {
+        !filterText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         if model.selectedRunID == nil {
@@ -240,15 +269,24 @@ private struct EventList: View {
                 description: Text("Choose a run from the sidebar to view event details.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if model.selectedEvents.isEmpty {
-            ContentUnavailableView(
-                "No Events Found",
-                systemImage: "list.bullet.rectangle",
-                description: Text("No events are available for the selected run/device filter.")
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if events.isEmpty {
+            if isFiltering {
+                ContentUnavailableView(
+                    "No Matches",
+                    systemImage: "magnifyingglass",
+                    description: Text("No events match the current filter.")
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ContentUnavailableView(
+                    "No Events Found",
+                    systemImage: "list.bullet.rectangle",
+                    description: Text("No events are available for the selected run/device filter.")
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         } else {
-            List(model.selectedEvents) { event in
+            List(events) { event in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(event.event)
                         .bold()
@@ -281,7 +319,7 @@ private struct EventList: View {
                         copyEventJSON(event)
                     }
                     Button("Copy Payload") {
-                        copyToPasteboard(payloadJSON(for: event.payload))
+                        copyToPasteboard(payloadJSONString(for: event.payload))
                     }
                 }
                 .help("Double-click to copy event JSON")
@@ -302,15 +340,7 @@ private struct EventList: View {
     }
 
     private func payloadString(for payload: JSONValue) -> String {
-        "payload: \(payloadJSON(for: payload))"
-    }
-
-    private func payloadJSON(for payload: JSONValue) -> String {
-        guard let data = try? LogRollerJSONCoders.encoder.encode(payload),
-              let text = String(data: data, encoding: .utf8) else {
-            return "payload unavailable"
-        }
-        return text
+        "payload: \(payloadJSONString(for: payload))"
     }
 
     private func resourcesSummary(for resources: JSONValue?) -> String? {
