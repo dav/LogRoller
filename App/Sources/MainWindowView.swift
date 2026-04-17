@@ -260,6 +260,11 @@ private struct EventList: View {
                     Text("received: \(LogRollerJSONCoders.render(date: event.recvTS))")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                    if let resourcesText = resourcesSummary(for: event.resources) {
+                        Text("resources: \(resourcesText)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                     Text(payloadString(for: event.payload))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -306,5 +311,41 @@ private struct EventList: View {
             return "payload unavailable"
         }
         return text
+    }
+
+    private func resourcesSummary(for resources: JSONValue?) -> String? {
+        guard case let .object(dict) = resources else { return nil }
+
+        var parts: [String] = []
+        if let memory = numberValue(dict["memory_bytes"]) {
+            parts.append("mem \(byteString(memory))")
+        }
+        if let cpu = numberValue(dict["cpu_percent"]) {
+            parts.append("cpu \(cpuString(cpu))")
+        }
+        if let threads = numberValue(dict["thread_count"]) {
+            parts.append("threads \(Int(threads))")
+        }
+        if let disk = numberValue(dict["disk_free_bytes"]) {
+            parts.append("disk \(byteString(disk)) free")
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " • ")
+    }
+
+    private func numberValue(_ value: JSONValue?) -> Double? {
+        guard case let .number(number) = value else { return nil }
+        return number
+    }
+
+    private func byteString(_ bytes: Double) -> String {
+        ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .memory)
+    }
+
+    private func cpuString(_ percent: Double) -> String {
+        let rounded = (percent * 10).rounded() / 10
+        if rounded == rounded.rounded() {
+            return "\(Int(rounded))%"
+        }
+        return String(format: "%.1f%%", rounded)
     }
 }
