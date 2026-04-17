@@ -200,7 +200,17 @@
         <div class="page">
             <header class="header">
                 <h1>LogRoller</h1>
-                <img src="icon.png" alt="LogRoller" width="128" height="128" style="margin: 1rem auto 0.75rem; display: block; border-radius: 22px;" />
+                <img
+                    src="icon.png"
+                    alt="LogRoller"
+                    width="128"
+                    height="128"
+                    style="
+                        margin: 1rem auto 0.75rem;
+                        display: block;
+                        border-radius: 22px;
+                    "
+                />
                 <p class="tagline">
                     Allow your code agent to directly access debug logs when you
                     are testing code on remote devices.
@@ -212,15 +222,16 @@
                 <p>
                     LogRoller allows your code agents to check the logs for your
                     manual or automated test runs that are happening on a
-                    different device, e.g. an iPhone or Vision Pro, so you can
-                    tell the agent to check logs on your recent test run to help
-                    debug what went wrong.
+                    different device so you can tell the agent to check logs on
+                    your recent test run to help debug what went wrong.
                 </p>
                 <p>
                     LogRoller runs a lightweight HTTPS server on your Mac that
                     receives structured events from any client &mdash; iOS
-                    simulators, physical devices, or desktop apps. Events are
-                    persisted locally as NDJSON and queryable via the
+                    simulators, physical devices (e.g. your smart phone, Vision
+                    Pro, Arduino, Quest or Apple TV, anthing that can post over
+                    HTTP). Events are persisted locally as NDJSON and queryable
+                    via the
                     <code>logroller</code> CLI, making it easy for AI agents and
                     human developers to inspect what happened during a test run.
                 </p>
@@ -296,7 +307,6 @@ Something went wrong, can you check the logs for the last test run?</pre
                 </p>
                 <ul>
                     <li>Requires macOS 15 (Sequoia) or later</li>
-                    <li>Notarized and signed with Developer ID</li>
                     <li>Includes Claude Code integration skill</li>
                 </ul>
                 <p style="margin-top: 1rem">
