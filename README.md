@@ -46,9 +46,22 @@ $ curl -sS https://192.168.1.123:8443/ingest \
           "run_id":"run_curl_test",
           "device_id":"curl_client_01",
           "seq":1,
+          "trace_id":"trace_abc123",
+          "resources":{"memory_bytes":128000000,"cpu_percent":4.2,"thread_count":12,"disk_free_bytes":53687091200},
           "payload":{"anything":"goes","nested":{"x":1,"flag":true}}
         }'        
 ```
+
+Events may include two optional cross-cutting fields alongside `payload`:
+
+- `resources` — snapshot of host/process resource usage at emit time. Conventional keys: `memory_bytes` (int), `cpu_percent` (number), `thread_count` (int), `disk_free_bytes` (int).
+- `trace_id` — correlation ID (OpenTelemetry-style) tying related events together across devices/services. Reuse the same value for every event in a logical trace.
+
+## CLI Commands
+
+- `logroller status` — reports CLI/server state and actively probes the local HTTPS `/healthz` endpoint, surfacing `server_active`, `active_base_url`, and `health_status_code`.
+- `logroller runs` — lists recent runs (most-recently-updated first) with `run_id`, `created_at`, `updated_at`, and `device_ids`. Defaults to `--limit 5`; supports `--json` and `--ndjson`.
+- `logroller ingest-help` — full event schema and integration guidance for agents.
 
 ## License
 
