@@ -16,9 +16,11 @@
 		69E09A6A20F0670EAB73DCA3 /* LogRollerCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0E978A0611046D7B2723B38 /* LogRollerCore */; };
 		81F6A322066A95115E64E457 /* LogRollerServer in Frameworks */ = {isa = PBXBuildFile; productRef = E856711F4B46CE3E48ABDA23 /* LogRollerServer */; };
 		A4C83A68DE3800F2BA99F2FA /* LogRollerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19798EDC2C81D7AA6C1DBF7B /* LogRollerApp.swift */; };
+		CB549FB0A1915F5486869EBD /* RunFilterField.swift in Sources */ = {isa = PBXBuildFile; fileRef = B063C31DC29B30E23481AEE5 /* RunFilterField.swift */; };
 		D10F596EDF070F2B33DA9CBC /* LogRollerAppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49E7C0ECA1CC7C8DF06773B /* LogRollerAppSmokeTests.swift */; };
 		E08A86CC796C08FDB70A4B96 /* LogRollerServer in Frameworks */ = {isa = PBXBuildFile; productRef = E3E85E3D486145359E7616A9 /* LogRollerServer */; };
 		FBAEFBAF5B8B6FC6CD52F495 /* LogRollerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 83E7C7C193DAB1569BF235A0 /* LogRollerCore */; };
+		FBBAD02F9C312F18A561DE63 /* RunSummaryFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB30E4E6297CEE19CD5B7283 /* RunSummaryFilterTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,7 +41,9 @@
 		91A841D2751AF3FB9390A483 /* logroller */ = {isa = PBXFileReference; includeInIndex = 0; path = logroller; sourceTree = BUILT_PRODUCTS_DIR; };
 		97ADF93E83874B951D83ED30 /* WindowCloseInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCloseInterceptor.swift; sourceTree = "<group>"; };
 		ADA579E072A1FD70095F6A66 /* LogRollerApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LogRollerApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B063C31DC29B30E23481AEE5 /* RunFilterField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunFilterField.swift; sourceTree = "<group>"; };
 		B3AF903CFFA81D27D02A5E60 /* LogRollerAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LogRollerAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BB30E4E6297CEE19CD5B7283 /* RunSummaryFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSummaryFilterTests.swift; sourceTree = "<group>"; };
 		C49E7C0ECA1CC7C8DF06773B /* LogRollerAppSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogRollerAppSmokeTests.swift; sourceTree = "<group>"; };
 		ED9F827CAC2D3A20C7098520 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EE852C85727E36C18425F0CD /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
@@ -102,6 +106,7 @@
 			isa = PBXGroup;
 			children = (
 				C49E7C0ECA1CC7C8DF06773B /* LogRollerAppSmokeTests.swift */,
+				BB30E4E6297CEE19CD5B7283 /* RunSummaryFilterTests.swift */,
 			);
 			name = Tests;
 			path = App/Tests;
@@ -116,6 +121,7 @@
 				F65BAF7190BE5B4D0340E5D0 /* LogRoller.entitlements */,
 				19798EDC2C81D7AA6C1DBF7B /* LogRollerApp.swift */,
 				EE852C85727E36C18425F0CD /* MainWindowView.swift */,
+				B063C31DC29B30E23481AEE5 /* RunFilterField.swift */,
 				97ADF93E83874B951D83ED30 /* WindowCloseInterceptor.swift */,
 			);
 			name = Sources;
@@ -257,6 +263,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D10F596EDF070F2B33DA9CBC /* LogRollerAppSmokeTests.swift in Sources */,
+				FBBAD02F9C312F18A561DE63 /* RunSummaryFilterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,6 +283,7 @@
 				5EE1AD2BE0AF6E68B88A27B3 /* EventFilterField.swift in Sources */,
 				A4C83A68DE3800F2BA99F2FA /* LogRollerApp.swift in Sources */,
 				299EE3FC34CE44FE708AABFF /* MainWindowView.swift in Sources */,
+				CB549FB0A1915F5486869EBD /* RunFilterField.swift in Sources */,
 				3C80CACD2EC74247A1A49615 /* WindowCloseInterceptor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -332,13 +340,14 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LogRollerApp.app/Contents/MacOS/LogRollerApp";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LogRoller.app/Contents/MacOS/LogRoller";
 			};
 			name = Release;
 		};
@@ -441,13 +450,14 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LogRollerApp.app/Contents/MacOS/LogRollerApp";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LogRoller.app/Contents/MacOS/LogRoller";
 			};
 			name = Debug;
 		};

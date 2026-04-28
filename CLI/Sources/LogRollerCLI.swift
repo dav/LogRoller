@@ -15,6 +15,7 @@ struct LogRollerCLI {
         var deviceID: String?
         var limit: Int = 200
         var useNDJSON = false
+        var emitMetadata = false
     }
 
     private struct IngestHelpOptions {
@@ -59,6 +60,28 @@ struct LogRollerCLI {
             case deviceID = "device_id"
             case count
             case events
+        }
+    }
+
+    private struct EventsMetadataResponse: Encodable {
+        var ok = true
+        var runID: String
+        var eventCount: Int
+        var errorCount: Int
+        var deviceCount: Int
+        var startTime: Date?
+        var endTime: Date?
+        var devices: [DeviceSummary]
+
+        enum CodingKeys: String, CodingKey {
+            case ok
+            case runID = "run_id"
+            case eventCount = "event_count"
+            case errorCount = "error_count"
+            case deviceCount = "device_count"
+            case startTime = "start_time"
+            case endTime = "end_time"
+            case devices
         }
     }
 
@@ -306,6 +329,34 @@ struct LogRollerCLI {
                 Foundation.exit(1)
             }
             runID = latestRun.runID
+        }
+
+        if options.emitMetadata {
+            let summaries = await store.listRuns(limit: .max)
+            guard let summary = summaries.first(where: { $0.runID == runID }) else {
+                fputs("Run not found: \(runID)\n", stderr)
+                Foundation.exit(1)
+            }
+            let devices = await store.listDevices(runID: runID)
+            let response = EventsMetadataResponse(
+                runID: runID,
+                eventCount: summary.eventCount,
+                errorCount: summary.errorCount,
+                deviceCount: summary.deviceCount,
+                startTime: summary.createdAt,
+                endTime: summary.updatedAt,
+                devices: devices
+            )
+            do {
+                let data = try LogRollerJSONCoders.encoder.encode(response)
+                if let string = String(data: data, encoding: .utf8) {
+                    print(string)
+                }
+            } catch {
+                fputs("Failed to encode events metadata output: \(error.localizedDescription)\n", stderr)
+                Foundation.exit(1)
+            }
+            return
         }
 
         let events: [StoredEvent]
@@ -574,6 +625,9 @@ struct LogRollerCLI {
             case "--json":
                 options.useNDJSON = false
                 index += 1
+            case "--meta", "--metadata":
+                options.emitMetadata = true
+                index += 1
             default:
                 throw CLIError.invalidOption("Unknown option: \(argument)")
             }
@@ -671,13 +725,14 @@ struct LogRollerCLI {
         Usage:
           logroller status
           logroller runs [--limit <n>] [--json|--ndjson]
-          logroller events [--run <run_id>] [--device <device_id>] [--limit <n>] [--json|--ndjson]
+          logroller events [--run <run_id>] [--device <device_id>] [--limit <n>] [--json|--ndjson] [--meta]
           logroller ingest-help [--markdown|--json]
 
         Notes:
           - runs lists runs in reverse updated-at order; default --limit is 5.
           - If --run is omitted, the latest run is used.
           - Output defaults to JSON; use --ndjson for one-row-per-line output.
+          - events --meta (alias --metadata) emits run-level summary: event count, start/end times, and devices (no event rows).
           - ingest-help defaults to Markdown output.
         """)
     }

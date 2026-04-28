@@ -15,8 +15,12 @@ final class AppModel {
     var configuredPort: UInt16 = 8443
     var serverStatus: ServerStatus = .init(state: .stopped)
     var runSummaries: [RunSummary] = []
+    var runFilterText: String = ""
     var deviceSummaries: [DeviceSummary] = []
-    var selectedRunID: String?
+    var selectedRunIDs: Set<String> = []
+    var selectedRunID: String? {
+        selectedRunIDs.count == 1 ? selectedRunIDs.first : nil
+    }
     var selectedDeviceID: String?
     var selectedEvents: [StoredEvent] = []
     var skipCloseWarning: Bool = UserDefaults.standard.bool(forKey: AppModel.skipCloseWarningKey) {
@@ -33,6 +37,9 @@ final class AppModel {
     }
     var primaryIngestBaseURL: String? {
         ingestBaseURLs.first
+    }
+    var filteredRunSummaries: [RunSummary] {
+        RunSummaryFilter.filtered(runSummaries, matching: runFilterText)
     }
 
     private var didStart = false
@@ -85,26 +92,33 @@ final class AppModel {
         runSummaries = await store.listRuns(limit: 200)
         debugLog("refreshRuns: fetched \(runSummaries.count) runs")
 
-        if selectedRunID == nil {
-            selectedRunID = runSummaries.first?.runID
-            debugLog("refreshRuns: auto-selected run \(selectedRunID ?? "nil")")
+        let availableIDs = Set(runSummaries.map(\.runID))
+        let prunedSelection = selectedRunIDs.intersection(availableIDs)
+        if prunedSelection != selectedRunIDs {
+            selectedRunIDs = prunedSelection
+            debugLog("refreshRuns: pruned selection to \(selectedRunIDs.count) runs that still exist")
         }
 
-        if let selectedRunID, runSummaries.contains(where: { $0.runID == selectedRunID }) {
-            await refreshDevicesAndEvents()
-        } else {
-            selectedRunID = nil
+        if selectedRunIDs.isEmpty,
+           let autoSelectID = filteredRunSummaries.first?.runID ?? runSummaries.first?.runID {
+            selectedRunIDs = [autoSelectID]
+            debugLog("refreshRuns: auto-selected run \(autoSelectID)")
+        }
+
+        if selectedRunIDs.isEmpty {
             selectedDeviceID = nil
             deviceSummaries = []
             selectedEvents = []
-            debugLog("refreshRuns: cleared selection because selected run is missing")
+            debugLog("refreshRuns: no runs available")
+        } else {
+            await refreshDevicesAndEvents()
         }
     }
 
-    func setSelectedRun(_ runID: String?) async {
-        selectedRunID = runID
+    func setSelectedRuns(_ runIDs: Set<String>) async {
+        selectedRunIDs = runIDs
         selectedDeviceID = nil
-        debugLog("setSelectedRun: run=\(runID ?? "nil"), device reset to all")
+        debugLog("setSelectedRuns: count=\(runIDs.count), device reset to all")
         await refreshDevicesAndEvents()
     }
 
@@ -142,7 +156,7 @@ final class AppModel {
             }
 
             let receipt = try LogRollerJSONCoders.decoder.decode(IngestReceipt.self, from: response.body)
-            selectedRunID = receipt.runID
+            selectedRunIDs = [receipt.runID]
             selectedDeviceID = nil
             lastErrorMessage = nil
             debugLog("simulateIngest: receipt stored=\(receipt.stored), run=\(receipt.runID), device=\(receipt.deviceID)")
@@ -154,23 +168,41 @@ final class AppModel {
     }
 
     func deleteRun(_ runID: String) async {
-        do {
-            try await store.deleteRun(runID: runID)
+        await deleteRuns([runID])
+    }
 
-            if selectedRunID == runID {
-                selectedRunID = nil
-                selectedDeviceID = nil
-                selectedEvents = []
-                deviceSummaries = []
+    func deleteRuns(_ runIDs: Set<String>) async {
+        guard !runIDs.isEmpty else { return }
+
+        var failures: [(runID: String, message: String)] = []
+        for runID in runIDs {
+            do {
+                try await store.deleteRun(runID: runID)
+                debugLog("deleteRuns: removed run \(runID)")
+            } catch {
+                failures.append((runID, error.localizedDescription))
+                debugLog("deleteRuns: failed for run \(runID): \(error.localizedDescription)")
             }
-
-            lastErrorMessage = nil
-            debugLog("deleteRun: removed run \(runID)")
-            await refreshRuns()
-        } catch {
-            lastErrorMessage = "Unable to delete run \(runID): \(error.localizedDescription)"
-            debugLog("deleteRun: failed for run \(runID): \(error.localizedDescription)")
         }
+
+        let successfullyDeleted = runIDs.subtracting(failures.map(\.runID))
+        selectedRunIDs.subtract(successfullyDeleted)
+        if selectedRunIDs.isEmpty {
+            selectedDeviceID = nil
+            selectedEvents = []
+            deviceSummaries = []
+        }
+
+        if failures.isEmpty {
+            lastErrorMessage = nil
+        } else if failures.count == 1, let failure = failures.first {
+            lastErrorMessage = "Unable to delete run \(failure.runID): \(failure.message)"
+        } else {
+            let detail = failures.map { "\($0.runID): \($0.message)" }.joined(separator: "\n")
+            lastErrorMessage = "Unable to delete \(failures.count) runs:\n\(detail)"
+        }
+
+        await refreshRuns()
     }
 
     private func refreshDevicesAndEvents() async {

@@ -40,38 +40,62 @@ struct MainWindowView: View {
 
 private struct RunSidebarView: View {
     @Bindable var model: AppModel
-    @State private var runPendingDeletion: RunSummary?
+    @State private var runIDsPendingDeletion: Set<String> = []
+
+    private var isShowingDeleteConfirmation: Binding<Bool> {
+        Binding(
+            get: { !runIDsPendingDeletion.isEmpty },
+            set: { show in
+                if !show {
+                    runIDsPendingDeletion = []
+                }
+            }
+        )
+    }
 
     var body: some View {
-        List(selection: Binding(get: {
-            model.selectedRunID
-        }, set: { selection in
-            Task {
-                await model.setSelectedRun(selection)
-            }
-        })) {
-            ForEach(model.runSummaries) { run in
-                VStack(alignment: .leading) {
-                    Text(run.runID)
-                        .bold()
-                    Text("\(run.eventCount) events • \(run.deviceCount) devices")
-                        .font(.caption)
+        VStack(spacing: 0) {
+            RunFilterField(text: $model.runFilterText)
+            List(selection: Binding(get: {
+                model.selectedRunIDs
+            }, set: { selection in
+                Task {
+                    await model.setSelectedRuns(selection)
                 }
-                .tag(run.runID)
-                .contextMenu {
-                    Button("Delete Run", role: .destructive) {
-                        runPendingDeletion = run
+            })) {
+                ForEach(model.filteredRunSummaries) { run in
+                    VStack(alignment: .leading) {
+                        Text(run.runID)
+                            .bold()
+                        Text("\(run.eventCount) events • \(run.deviceCount) devices")
+                            .font(.caption)
+                    }
+                    .tag(run.runID)
+                }
+            }
+            .contextMenu(forSelectionType: String.self) { runIDs in
+                if !runIDs.isEmpty {
+                    Button(deleteButtonTitle(for: runIDs.count), role: .destructive) {
+                        runIDsPendingDeletion = runIDs
                     }
                 }
             }
-        }
-        .overlay {
-            if model.runSummaries.isEmpty {
-                ContentUnavailableView(
-                    "No Runs Yet",
-                    systemImage: "tray",
-                    description: Text("Click Simulate Ingest to create test data.")
-                )
+            .overlay {
+                if model.filteredRunSummaries.isEmpty {
+                    if model.runSummaries.isEmpty {
+                        ContentUnavailableView(
+                            "No Runs Yet",
+                            systemImage: "tray",
+                            description: Text("Click Simulate Ingest to create test data.")
+                        )
+                    } else {
+                        ContentUnavailableView(
+                            "No Matching Runs",
+                            systemImage: "magnifyingglass",
+                            description: Text("Adjust the filter to show matching run IDs.")
+                        )
+                    }
+                }
             }
         }
         .navigationTitle("Runs")
@@ -84,41 +108,45 @@ private struct RunSidebarView: View {
                 }
             }
             ToolbarItem {
-                Button("Delete Run", systemImage: "trash", role: .destructive) {
-                    guard let selectedRunID = model.selectedRunID,
-                          let selectedRun = model.runSummaries.first(where: { $0.runID == selectedRunID }) else {
-                        return
-                    }
-                    runPendingDeletion = selectedRun
+                Button(deleteButtonTitle(for: model.selectedRunIDs.count), systemImage: "trash", role: .destructive) {
+                    guard !model.selectedRunIDs.isEmpty else { return }
+                    runIDsPendingDeletion = model.selectedRunIDs
                 }
-                .disabled(model.selectedRunID == nil)
+                .disabled(model.selectedRunIDs.isEmpty)
             }
         }
         .alert(
-            "Delete Run?",
-            isPresented: Binding(
-                get: { runPendingDeletion != nil },
-                set: { show in
-                    if !show {
-                        runPendingDeletion = nil
-                    }
-                }
-            ),
-            presenting: runPendingDeletion
-        ) { run in
+            deleteAlertTitle(for: runIDsPendingDeletion.count),
+            isPresented: isShowingDeleteConfirmation
+        ) {
             Button("Delete", role: .destructive) {
-                let runID = run.runID
-                runPendingDeletion = nil
+                let runIDs = runIDsPendingDeletion
+                runIDsPendingDeletion = []
                 Task {
-                    await model.deleteRun(runID)
+                    await model.deleteRuns(runIDs)
                 }
             }
             Button("Cancel", role: .cancel) {
-                runPendingDeletion = nil
+                runIDsPendingDeletion = []
             }
-        } message: { run in
-            Text("This permanently removes \(run.runID) and all of its stored device event data.")
+        } message: {
+            Text(deleteAlertMessage(for: runIDsPendingDeletion))
         }
+    }
+
+    private func deleteButtonTitle(for count: Int) -> String {
+        count <= 1 ? "Delete Run" : "Delete \(count) Runs"
+    }
+
+    private func deleteAlertTitle(for count: Int) -> String {
+        count <= 1 ? "Delete Run?" : "Delete \(count) Runs?"
+    }
+
+    private func deleteAlertMessage(for runIDs: Set<String>) -> String {
+        if runIDs.count == 1, let runID = runIDs.first {
+            return "This permanently removes \(runID) and all of its stored device event data."
+        }
+        return "This permanently removes \(runIDs.count) runs and all of their stored device event data."
     }
 }
 
@@ -173,8 +201,8 @@ private struct RunDetailView: View {
         let trimmed = filter.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return model.selectedEvents }
         return model.selectedEvents.filter { event in
-            if event.event.localizedCaseInsensitiveContains(trimmed) { return true }
-            return payloadJSONString(for: event.payload).localizedCaseInsensitiveContains(trimmed)
+            if event.event.localizedStandardContains(trimmed) { return true }
+            return payloadJSONString(for: event.payload).localizedStandardContains(trimmed)
         }
     }
 }
@@ -263,12 +291,21 @@ private struct EventList: View {
 
     var body: some View {
         if model.selectedRunID == nil {
-            ContentUnavailableView(
-                "Select a Run",
-                systemImage: "sidebar.left",
-                description: Text("Choose a run from the sidebar to view event details.")
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if model.selectedRunIDs.count > 1 {
+                ContentUnavailableView(
+                    "Multiple Runs Selected",
+                    systemImage: "rectangle.stack",
+                    description: Text("\(model.selectedRunIDs.count) runs selected. Select a single run to view its events, or use the Delete button to remove them.")
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ContentUnavailableView(
+                    "Select a Run",
+                    systemImage: "sidebar.left",
+                    description: Text("Choose a run from the sidebar to view event details.")
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         } else if events.isEmpty {
             if isFiltering {
                 ContentUnavailableView(

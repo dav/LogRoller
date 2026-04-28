@@ -11,6 +11,14 @@ settings:
 packages:
   LogRollerModules:
     path: Modules
+schemes:
+  LogRollerApp:
+    build:
+      targets:
+        LogRollerApp: all
+    test:
+      targets:
+        - name: LogRollerAppTests
 targets:
   LogRollerApp:
     type: application
@@ -57,5 +65,10 @@ targets:
     platform: macOS
     sources:
       - App/Tests
+    settings:
+      base:
+        BUNDLE_LOADER: $(TEST_HOST)
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/LogRoller.app/Contents/MacOS/LogRoller
     dependencies:
       - target: LogRollerApp

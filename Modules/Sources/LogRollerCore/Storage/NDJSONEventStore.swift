@@ -14,24 +14,59 @@ public actor NDJSONEventStore: EventStore {
         var devices: [String: MutableDeviceSummary]
     }
 
+    private struct StoredRunSummary: Codable {
+        struct Device: Codable {
+            let deviceID: String
+            let lastSeenAt: Date
+            let eventCount: Int
+
+            enum CodingKeys: String, CodingKey {
+                case deviceID = "device_id"
+                case lastSeenAt = "last_seen_at"
+                case eventCount = "event_count"
+            }
+        }
+
+        let runID: String
+        let createdAt: Date
+        let updatedAt: Date
+        let eventCount: Int
+        let errorCount: Int
+        let devices: [Device]
+
+        enum CodingKeys: String, CodingKey {
+            case runID = "run_id"
+            case createdAt = "created_at"
+            case updatedAt = "updated_at"
+            case eventCount = "event_count"
+            case errorCount = "error_count"
+            case devices
+        }
+    }
+
+    private static let summaryFilename = "summary.json"
+
     private let rootDirectory: URL
     private let fileManager = FileManager.default
     private var runIndex: [String: MutableRunSummary] = [:]
+    private var indexLoaded = false
 
     public init(rootDirectory: URL) throws {
         self.rootDirectory = rootDirectory
         try fileManager.createDirectory(at: rootDirectory, withIntermediateDirectories: true)
-        runIndex = try Self.rebuildIndexFromDisk(rootDirectory: rootDirectory, fileManager: fileManager)
-        Self.debugLog("Initialized store at \(Self.fileSystemPath(rootDirectory)), indexed runs: \(runIndex.count)")
+        Self.debugLog("Initialized store at \(Self.fileSystemPath(rootDirectory))")
     }
 
     public func ingest(batch: IngestBatchPayload, receiveDate: Date = .now) async throws -> IngestReceipt {
+        ensureIndexLoaded()
+
         let runIDFallback = batch.runID ?? fallbackRunID(now: receiveDate)
         let deviceIDFallback = batch.deviceID ?? "unknown_device"
 
         var firstRunID = runIDFallback
         var firstDeviceID = deviceIDFallback
         var storedEvents = 0
+        var touchedRunIDs: Set<String> = []
 
         for incoming in batch.events {
             let runID = normalizedID(incoming.runID ?? batch.runID ?? runIDFallback, fallback: runIDFallback)
@@ -54,6 +89,7 @@ public actor NDJSONEventStore: EventStore {
 
             try append(event: stored)
             updateRunIndex(event: stored)
+            touchedRunIDs.insert(runID)
 
             if storedEvents == 0 {
                 firstRunID = runID
@@ -63,11 +99,17 @@ public actor NDJSONEventStore: EventStore {
             storedEvents += 1
         }
 
+        for runID in touchedRunIDs {
+            persistSummary(forRunID: runID)
+        }
+
         Self.debugLog("Ingested batch: stored=\(storedEvents), run=\(firstRunID), device=\(firstDeviceID)")
         return IngestReceipt(stored: storedEvents, runID: firstRunID, deviceID: firstDeviceID)
     }
 
     public func listRuns(limit: Int = 100) async -> [RunSummary] {
+        ensureIndexLoaded()
+
         let runs = runIndex.map { runID, entry in
             RunSummary(
                 runID: runID,
@@ -87,6 +129,8 @@ public actor NDJSONEventStore: EventStore {
     }
 
     public func listDevices(runID: String) async -> [DeviceSummary] {
+        ensureIndexLoaded()
+
         guard let entry = runIndex[runID] else {
             Self.debugLog("listDevices(runID: \(runID)) -> 0 devices (run missing in index)")
             return []
@@ -102,6 +146,7 @@ public actor NDJSONEventStore: EventStore {
     }
 
     public func events(runID: String, deviceID: String?, limit: Int = 500) async throws -> [StoredEvent] {
+        // Intentionally does not load the run index — this path only needs the files under one run directory.
         let runDirectory = rootDirectory.appending(path: runID, directoryHint: .isDirectory)
         guard fileManager.fileExists(atPath: Self.fileSystemPath(runDirectory)) else {
             Self.debugLog("events(runID: \(runID), deviceID: \(deviceID ?? "all")) -> 0 (run directory missing at \(Self.fileSystemPath(runDirectory)))")
@@ -197,7 +242,9 @@ public actor NDJSONEventStore: EventStore {
         if fileManager.fileExists(atPath: Self.fileSystemPath(runDirectory)) {
             try fileManager.removeItem(at: runDirectory)
         }
-        runIndex.removeValue(forKey: runID)
+        if indexLoaded {
+            runIndex.removeValue(forKey: runID)
+        }
         Self.debugLog("deleteRun(runID: \(runID)) completed")
     }
 
@@ -263,52 +310,183 @@ public actor NDJSONEventStore: EventStore {
         return "run_\(stamp)"
     }
 
-    private static func rebuildIndexFromDisk(rootDirectory: URL, fileManager: FileManager) throws -> [String: MutableRunSummary] {
+    // MARK: - Index loading
+
+    private func ensureIndexLoaded() {
+        guard !indexLoaded else { return }
+        do {
+            runIndex = try Self.loadIndex(rootDirectory: rootDirectory, fileManager: fileManager)
+            indexLoaded = true
+            Self.debugLog("Loaded run index with \(runIndex.count) runs")
+        } catch {
+            Self.debugLog("Failed to load run index: \(error.localizedDescription); continuing with empty index")
+        }
+    }
+
+    private static func loadIndex(rootDirectory: URL, fileManager: FileManager) throws -> [String: MutableRunSummary] {
         var index: [String: MutableRunSummary] = [:]
         let runDirectories = try fileManager.contentsOfDirectory(at: rootDirectory, includingPropertiesForKeys: [.isDirectoryKey])
 
         for runDirectory in runDirectories {
-            let values = try runDirectory.resourceValues(forKeys: [.isDirectoryKey])
-            guard values.isDirectory == true else {
+            let values = try? runDirectory.resourceValues(forKeys: [.isDirectoryKey])
+            guard values?.isDirectory == true else {
                 continue
             }
 
             let runID = runDirectory.lastPathComponent
-            let deviceFiles = try fileManager.contentsOfDirectory(at: runDirectory, includingPropertiesForKeys: nil)
-
-            for deviceFile in deviceFiles where deviceFile.pathExtension == "ndjson" {
-                let fallbackDeviceID = deviceFile.deletingPathExtension().lastPathComponent
-                let data = try Data(contentsOf: deviceFile)
-
-                guard let text = String(data: data, encoding: .utf8) else {
-                    continue
-                }
-
-                for line in text.split(separator: "\n") {
-                    guard !line.isEmpty else {
-                        continue
-                    }
-                    guard let lineData = line.data(using: .utf8) else {
-                        continue
-                    }
-                    guard var event = Self.decodeStoredEvent(from: lineData) else {
-                        continue
-                    }
-
-                    // Keep index usable even if old or malformed rows had missing IDs.
-                    if event.runID.isEmpty {
-                        event.runID = runID
-                    }
-                    if event.deviceID.isEmpty {
-                        event.deviceID = fallbackDeviceID
-                    }
-                    Self.update(index: &index, with: event)
-                }
+            if let summary = resolveSummary(runDirectory: runDirectory, runID: runID, fileManager: fileManager) {
+                index[runID] = summary
             }
         }
 
         return index
     }
+
+    private static func resolveSummary(runDirectory: URL, runID: String, fileManager: FileManager) -> MutableRunSummary? {
+        let summaryURL = runDirectory.appending(path: summaryFilename)
+        let summaryMTime = mtime(of: summaryURL, fileManager: fileManager)
+        let newestEventMTime = newestNDJSONMTime(in: runDirectory, fileManager: fileManager)
+
+        // Trust the sidecar when it is at least as new as the most recent event file
+        // (or when there are no event files at all).
+        let sidecarIsFresh: Bool = {
+            guard let summaryMTime else { return false }
+            guard let newestEventMTime else { return true }
+            return summaryMTime >= newestEventMTime
+        }()
+
+        if sidecarIsFresh, let stored = readSummarySidecar(at: summaryURL) {
+            return mutableSummary(from: stored)
+        }
+
+        guard let rebuilt = rebuildSummary(runDirectory: runDirectory, runID: runID, fileManager: fileManager) else {
+            return nil
+        }
+        try? writeSummarySidecar(rebuilt, runID: runID, runDirectory: runDirectory)
+        return rebuilt
+    }
+
+    private static func rebuildSummary(runDirectory: URL, runID: String, fileManager: FileManager) -> MutableRunSummary? {
+        guard let deviceFiles = try? fileManager.contentsOfDirectory(at: runDirectory, includingPropertiesForKeys: nil) else {
+            return nil
+        }
+
+        var scratch: [String: MutableRunSummary] = [:]
+        for deviceFile in deviceFiles where deviceFile.pathExtension == "ndjson" {
+            let fallbackDeviceID = deviceFile.deletingPathExtension().lastPathComponent
+            guard let data = try? Data(contentsOf: deviceFile),
+                  let text = String(data: data, encoding: .utf8) else {
+                continue
+            }
+
+            for line in text.split(separator: "\n") {
+                guard !line.isEmpty else {
+                    continue
+                }
+                guard let lineData = line.data(using: .utf8) else {
+                    continue
+                }
+                guard var event = decodeStoredEvent(from: lineData) else {
+                    continue
+                }
+
+                if event.runID.isEmpty {
+                    event.runID = runID
+                }
+                if event.deviceID.isEmpty {
+                    event.deviceID = fallbackDeviceID
+                }
+                update(index: &scratch, with: event)
+            }
+        }
+
+        return scratch[runID]
+    }
+
+    // MARK: - Sidecar I/O
+
+    private func persistSummary(forRunID runID: String) {
+        guard let entry = runIndex[runID] else { return }
+        let runDirectory = rootDirectory.appending(path: runID, directoryHint: .isDirectory)
+        do {
+            try Self.writeSummarySidecar(entry, runID: runID, runDirectory: runDirectory)
+        } catch {
+            Self.debugLog("persistSummary(runID: \(runID)) failed: \(error.localizedDescription)")
+        }
+    }
+
+    private static func writeSummarySidecar(_ summary: MutableRunSummary, runID: String, runDirectory: URL) throws {
+        let stored = StoredRunSummary(
+            runID: runID,
+            createdAt: summary.createdAt,
+            updatedAt: summary.updatedAt,
+            eventCount: summary.eventCount,
+            errorCount: summary.errorCount,
+            devices: summary.devices.map { deviceID, device in
+                StoredRunSummary.Device(
+                    deviceID: deviceID,
+                    lastSeenAt: device.lastSeenAt,
+                    eventCount: device.eventCount
+                )
+            }
+        )
+        let data = try LogRollerJSONCoders.encoder.encode(stored)
+        let url = runDirectory.appending(path: summaryFilename)
+        try data.write(to: url, options: .atomic)
+    }
+
+    private static func readSummarySidecar(at url: URL) -> StoredRunSummary? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? LogRollerJSONCoders.decoder.decode(StoredRunSummary.self, from: data)
+    }
+
+    private static func mutableSummary(from stored: StoredRunSummary) -> MutableRunSummary {
+        var devices: [String: MutableDeviceSummary] = [:]
+        for device in stored.devices {
+            devices[device.deviceID] = MutableDeviceSummary(
+                lastSeenAt: device.lastSeenAt,
+                eventCount: device.eventCount
+            )
+        }
+        return MutableRunSummary(
+            createdAt: stored.createdAt,
+            updatedAt: stored.updatedAt,
+            eventCount: stored.eventCount,
+            errorCount: stored.errorCount,
+            devices: devices
+        )
+    }
+
+    private static func mtime(of url: URL, fileManager: FileManager) -> Date? {
+        guard let attrs = try? fileManager.attributesOfItem(atPath: fileSystemPath(url)) else {
+            return nil
+        }
+        return attrs[.modificationDate] as? Date
+    }
+
+    private static func newestNDJSONMTime(in runDirectory: URL, fileManager: FileManager) -> Date? {
+        guard let files = try? fileManager.contentsOfDirectory(
+            at: runDirectory,
+            includingPropertiesForKeys: [.contentModificationDateKey]
+        ) else {
+            return nil
+        }
+        var newest: Date?
+        for file in files where file.pathExtension == "ndjson" {
+            let values = try? file.resourceValues(forKeys: [.contentModificationDateKey])
+            guard let date = values?.contentModificationDate else {
+                continue
+            }
+            if let current = newest {
+                if date > current { newest = date }
+            } else {
+                newest = date
+            }
+        }
+        return newest
+    }
+
+    // MARK: - Event decoding
 
     private func decodeStoredEvent(from data: Data) -> StoredEvent? {
         Self.decodeStoredEvent(from: data)
