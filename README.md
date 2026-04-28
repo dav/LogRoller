@@ -18,9 +18,11 @@ And your agent will respond _"Let me run logroller to see what happened...."_
 - Exposes a CLI designed for automation and AI-agent workflows.
 - Includes a ready-made [SKILL.md](https://github.com/dav/LogRoller/blob/main/skills/logroller-client-integration/SKILL.md) file that lets the agent set up the necessary event emitting code and then examine the events.
 
-<img width="1458" height="575" alt="image" src="https://github.com/user-attachments/assets/ec30eaa7-7c53-455a-9c98-5bd0af6db67e" />
 
-It's not much to look at, but this isn't really for you. It's for your agent.
+<figure>
+  <img width="1501" height="684" alt="LogRollerScreenshot" src="https://github.com/user-attachments/assets/2e4e3305-61c7-45c8-a786-9931ab1bbc91" />
+  <figcaption>It's not much to look at, but this isn't really for you. It's for your agent.</figcaption>
+</figure>
 
 ## Setup
 
