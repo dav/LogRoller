@@ -1,6 +1,8 @@
 import Foundation
 
 public actor NDJSONEventStore: EventStore {
+    private static let maximumIdentifierUTF8Length = 255
+
     private struct MutableDeviceSummary {
         var lastSeenAt: Date
         var eventCount: Int
@@ -69,8 +71,14 @@ public actor NDJSONEventStore: EventStore {
         var touchedRunIDs: Set<String> = []
 
         for incoming in batch.events {
-            let runID = normalizedID(incoming.runID ?? batch.runID ?? runIDFallback, fallback: runIDFallback)
-            let deviceID = normalizedID(incoming.deviceID ?? batch.deviceID ?? deviceIDFallback, fallback: deviceIDFallback)
+            let runID = try validatedIdentifier(
+                normalizedID(incoming.runID ?? batch.runID ?? runIDFallback, fallback: runIDFallback),
+                label: "run_id"
+            )
+            let deviceID = try validatedIdentifier(
+                normalizedID(incoming.deviceID ?? batch.deviceID ?? deviceIDFallback, fallback: deviceIDFallback),
+                label: "device_id"
+            )
 
             let stored = StoredEvent(
                 runID: runID,
@@ -131,8 +139,13 @@ public actor NDJSONEventStore: EventStore {
     public func listDevices(runID: String) async -> [DeviceSummary] {
         ensureIndexLoaded()
 
-        guard let entry = runIndex[runID] else {
-            Self.debugLog("listDevices(runID: \(runID)) -> 0 devices (run missing in index)")
+        guard let validatedRunID = try? validatedIdentifier(runID, label: "run_id") else {
+            Self.debugLog("listDevices(runID: \(runID)) rejected invalid run ID")
+            return []
+        }
+
+        guard let entry = runIndex[validatedRunID] else {
+            Self.debugLog("listDevices(runID: \(validatedRunID)) -> 0 devices (run missing in index)")
             return []
         }
 
@@ -147,15 +160,17 @@ public actor NDJSONEventStore: EventStore {
 
     public func events(runID: String, deviceID: String?, limit: Int = 500) async throws -> [StoredEvent] {
         // Intentionally does not load the run index — this path only needs the files under one run directory.
-        let runDirectory = rootDirectory.appending(path: runID, directoryHint: .isDirectory)
+        let validatedRunID = try validatedIdentifier(runID, label: "run_id")
+        let validatedDeviceID = try deviceID.map { try validatedIdentifier($0, label: "device_id") }
+        let runDirectory = try runDirectoryURL(for: validatedRunID)
         guard fileManager.fileExists(atPath: Self.fileSystemPath(runDirectory)) else {
-            Self.debugLog("events(runID: \(runID), deviceID: \(deviceID ?? "all")) -> 0 (run directory missing at \(Self.fileSystemPath(runDirectory)))")
+            Self.debugLog("events(runID: \(validatedRunID), deviceID: \(validatedDeviceID ?? "all")) -> 0 (run directory missing at \(Self.fileSystemPath(runDirectory)))")
             return []
         }
 
         let files: [URL]
-        if let deviceID {
-            files = [runDirectory.appending(path: "\(deviceID).ndjson")]
+        if let validatedDeviceID {
+            files = [try deviceFileURL(in: runDirectory, deviceID: validatedDeviceID)]
         } else {
             files = try fileManager.contentsOfDirectory(at: runDirectory, includingPropertiesForKeys: nil)
                 .filter { $0.pathExtension == "ndjson" }
@@ -170,14 +185,14 @@ public actor NDJSONEventStore: EventStore {
         var collected: [StoredEvent] = []
         for file in files {
             guard fileManager.fileExists(atPath: Self.fileSystemPath(file)) else {
-                Self.debugLog("events(runID: \(runID)) skipped missing file: \(file.lastPathComponent)")
+                Self.debugLog("events(runID: \(validatedRunID)) skipped missing file: \(file.lastPathComponent)")
                 continue
             }
             let fallbackDeviceID = file.deletingPathExtension().lastPathComponent
 
             let data = try Data(contentsOf: file)
             guard let text = String(data: data, encoding: .utf8) else {
-                Self.debugLog("events(runID: \(runID)) skipped non-UTF8 file: \(file.lastPathComponent)")
+                Self.debugLog("events(runID: \(validatedRunID)) skipped non-UTF8 file: \(file.lastPathComponent)")
                 continue
             }
 
@@ -194,12 +209,12 @@ public actor NDJSONEventStore: EventStore {
                 if var event = decodeStoredEvent(from: lineData) {
                     // Keep event rendering usable even for legacy lines with missing IDs.
                     if event.runID.isEmpty {
-                        event.runID = runID
+                        event.runID = validatedRunID
                     }
                     if event.deviceID.isEmpty {
                         event.deviceID = fallbackDeviceID
                     }
-                    if let deviceID, event.deviceID != deviceID {
+                    if let validatedDeviceID, event.deviceID != validatedDeviceID {
                         filteredRows += 1
                         continue
                     }
@@ -211,14 +226,14 @@ public actor NDJSONEventStore: EventStore {
                 guard let rawLine = String(data: lineData, encoding: .utf8),
                       let fallbackEvent = Self.unparsedEvent(
                         from: rawLine,
-                        runID: runID,
+                        runID: validatedRunID,
                         fallbackDeviceID: fallbackDeviceID,
                         lineNumber: lineIndex + 1
                       ) else {
                     droppedRows += 1
                     continue
                 }
-                if let deviceID, fallbackEvent.deviceID != deviceID {
+                if let validatedDeviceID, fallbackEvent.deviceID != validatedDeviceID {
                     filteredRows += 1
                     continue
                 }
@@ -232,20 +247,21 @@ public actor NDJSONEventStore: EventStore {
             .prefix(limit)
             .map { $0 }
         Self.debugLog(
-            "events(runID: \(runID), deviceID: \(deviceID ?? "all"), limit: \(limit)) files=\(files.count), lines=\(totalLines), decoded=\(decodedRows), fallback=\(fallbackRows), filtered=\(filteredRows), dropped=\(droppedRows), returned=\(result.count)"
+            "events(runID: \(validatedRunID), deviceID: \(validatedDeviceID ?? "all"), limit: \(limit)) files=\(files.count), lines=\(totalLines), decoded=\(decodedRows), fallback=\(fallbackRows), filtered=\(filteredRows), dropped=\(droppedRows), returned=\(result.count)"
         )
         return result
     }
 
     public func deleteRun(runID: String) async throws {
-        let runDirectory = rootDirectory.appending(path: runID, directoryHint: .isDirectory)
+        let validatedRunID = try validatedIdentifier(runID, label: "run_id")
+        let runDirectory = try runDirectoryURL(for: validatedRunID)
         if fileManager.fileExists(atPath: Self.fileSystemPath(runDirectory)) {
             try fileManager.removeItem(at: runDirectory)
         }
         if indexLoaded {
-            runIndex.removeValue(forKey: runID)
+            runIndex.removeValue(forKey: validatedRunID)
         }
-        Self.debugLog("deleteRun(runID: \(runID)) completed")
+        Self.debugLog("deleteRun(runID: \(validatedRunID)) completed")
     }
 
     public func storageRootPath() -> String {
@@ -253,10 +269,10 @@ public actor NDJSONEventStore: EventStore {
     }
 
     private func append(event: StoredEvent) throws {
-        let runDirectory = rootDirectory.appending(path: event.runID, directoryHint: .isDirectory)
+        let runDirectory = try runDirectoryURL(for: event.runID)
         try fileManager.createDirectory(at: runDirectory, withIntermediateDirectories: true)
 
-        let fileURL = runDirectory.appending(path: "\(event.deviceID).ndjson")
+        let fileURL = try deviceFileURL(in: runDirectory, deviceID: event.deviceID)
         let eventData = try LogRollerJSONCoders.encoder.encode(event)
         var line = eventData
         line.append(0x0A)
@@ -334,6 +350,10 @@ public actor NDJSONEventStore: EventStore {
             }
 
             let runID = runDirectory.lastPathComponent
+            guard isValidIdentifier(runID) else {
+                debugLog("Skipping invalid run directory name during index load: \(runID)")
+                continue
+            }
             if let summary = resolveSummary(runDirectory: runDirectory, runID: runID, fileManager: fileManager) {
                 index[runID] = summary
             }
@@ -407,12 +427,46 @@ public actor NDJSONEventStore: EventStore {
 
     private func persistSummary(forRunID runID: String) {
         guard let entry = runIndex[runID] else { return }
-        let runDirectory = rootDirectory.appending(path: runID, directoryHint: .isDirectory)
         do {
+            let runDirectory = try runDirectoryURL(for: runID)
             try Self.writeSummarySidecar(entry, runID: runID, runDirectory: runDirectory)
         } catch {
             Self.debugLog("persistSummary(runID: \(runID)) failed: \(error.localizedDescription)")
         }
+    }
+
+    private func runDirectoryURL(for runID: String) throws -> URL {
+        let validatedRunID = try validatedIdentifier(runID, label: "run_id")
+        return rootDirectory.appending(path: validatedRunID, directoryHint: .isDirectory)
+    }
+
+    private func deviceFileURL(in runDirectory: URL, deviceID: String) throws -> URL {
+        let validatedDeviceID = try validatedIdentifier(deviceID, label: "device_id")
+        return runDirectory.appending(path: "\(validatedDeviceID).ndjson")
+    }
+
+    private func validatedIdentifier(_ value: String, label: String) throws -> String {
+        let candidate = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard Self.isValidIdentifier(candidate) else {
+            throw StorageError.invalidIdentifier(label: label, value: value)
+        }
+        return candidate
+    }
+
+    private static func isValidIdentifier(_ value: String) -> Bool {
+        guard !value.isEmpty else {
+            return false
+        }
+        guard value.utf8.count <= maximumIdentifierUTF8Length else {
+            return false
+        }
+        guard value != ".", value != ".." else {
+            return false
+        }
+        guard !value.contains("/") && !value.contains("\\") else {
+            return false
+        }
+        return value.unicodeScalars.allSatisfy { !CharacterSet.controlCharacters.contains($0) }
     }
 
     private static func writeSummarySidecar(_ summary: MutableRunSummary, runID: String, runDirectory: URL) throws {
@@ -484,6 +538,17 @@ public actor NDJSONEventStore: EventStore {
             }
         }
         return newest
+    }
+
+    private enum StorageError: LocalizedError {
+        case invalidIdentifier(label: String, value: String)
+
+        var errorDescription: String? {
+            switch self {
+            case let .invalidIdentifier(label, value):
+                return "Invalid \(label): \(value)"
+            }
+        }
     }
 
     // MARK: - Event decoding

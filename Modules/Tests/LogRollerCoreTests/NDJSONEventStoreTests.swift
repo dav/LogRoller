@@ -191,4 +191,132 @@ struct NDJSONEventStoreTests {
         let events = try await store.events(runID: "run_delete_me", deviceID: nil, limit: 10)
         #expect(events.isEmpty)
     }
+
+    @Test
+    func ingestRejectsPathTraversalRunID() async throws {
+        let parentDirectory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let root = parentDirectory.appending(path: "store", directoryHint: .isDirectory)
+        let escapedRunDirectory = parentDirectory.appending(path: "escaped_run", directoryHint: .isDirectory)
+
+        defer {
+            try? FileManager.default.removeItem(at: parentDirectory)
+        }
+
+        let store = try NDJSONEventStore(rootDirectory: root)
+        let batch = IngestBatchPayload(
+            runID: "../escaped_run",
+            deviceID: "device_a",
+            events: [
+                IncomingEvent(
+                    ts: .now,
+                    level: .info,
+                    event: "security.test",
+                    seq: 1,
+                    payload: .object([:])
+                )
+            ]
+        )
+
+        var didThrow = false
+        do {
+            _ = try await store.ingest(batch: batch, receiveDate: .now)
+        } catch {
+            didThrow = true
+            #expect(error.localizedDescription.localizedStandardContains("invalid run_id"))
+        }
+
+        #expect(didThrow)
+        #expect(!FileManager.default.fileExists(atPath: escapedRunDirectory.path(percentEncoded: false)))
+        #expect((await store.listRuns(limit: 10)).isEmpty)
+    }
+
+    @Test
+    func ingestRejectsPathTraversalDeviceID() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let escapedFile = root.appending(path: "escaped_device.ndjson")
+
+        defer {
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        let store = try NDJSONEventStore(rootDirectory: root)
+        let batch = IngestBatchPayload(
+            runID: "run_safe",
+            deviceID: "../escaped_device",
+            events: [
+                IncomingEvent(
+                    ts: .now,
+                    level: .info,
+                    event: "security.test",
+                    seq: 1,
+                    payload: .object([:])
+                )
+            ]
+        )
+
+        var didThrow = false
+        do {
+            _ = try await store.ingest(batch: batch, receiveDate: .now)
+        } catch {
+            didThrow = true
+            #expect(error.localizedDescription.localizedStandardContains("invalid device_id"))
+        }
+
+        #expect(didThrow)
+        #expect(!FileManager.default.fileExists(atPath: escapedFile.path(percentEncoded: false)))
+        #expect((await store.listRuns(limit: 10)).isEmpty)
+    }
+
+    @Test
+    func eventsRejectPathTraversalRunID() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        let store = try NDJSONEventStore(rootDirectory: root)
+
+        var didThrow = false
+        do {
+            _ = try await store.events(runID: "../escaped_run", deviceID: nil, limit: 10)
+        } catch {
+            didThrow = true
+            #expect(error.localizedDescription.localizedStandardContains("invalid run_id"))
+        }
+
+        #expect(didThrow)
+    }
+
+    @Test
+    func deleteRunRejectsPathTraversalRunID() async throws {
+        let parentDirectory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let root = parentDirectory.appending(path: "store", directoryHint: .isDirectory)
+        let siblingDirectory = parentDirectory.appending(path: "do_not_delete", directoryHint: .isDirectory)
+        let markerFile = siblingDirectory.appending(path: "marker.txt")
+
+        defer {
+            try? FileManager.default.removeItem(at: parentDirectory)
+        }
+
+        try FileManager.default.createDirectory(at: siblingDirectory, withIntermediateDirectories: true)
+        try Data("safe".utf8).write(to: markerFile)
+
+        let store = try NDJSONEventStore(rootDirectory: root)
+
+        var didThrow = false
+        do {
+            try await store.deleteRun(runID: "../do_not_delete")
+        } catch {
+            didThrow = true
+            #expect(error.localizedDescription.localizedStandardContains("invalid run_id"))
+        }
+
+        #expect(didThrow)
+        #expect(FileManager.default.fileExists(atPath: siblingDirectory.path(percentEncoded: false)))
+        #expect(FileManager.default.fileExists(atPath: markerFile.path(percentEncoded: false)))
+    }
 }
