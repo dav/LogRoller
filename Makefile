@@ -46,10 +46,11 @@ install: cli
 	@cp -R /tmp/LogRollerDerivedData/Build/Products/Release/LogRoller.app /Applications/
 	@echo "✓ LogRoller.app installed"
 	@mkdir -p $(INSTALL_DIR)
-	@ln -sf /tmp/LogRollerDerivedData/Build/Products/Release/logroller $(INSTALL_DIR)/logroller
+	@rm -f $(INSTALL_DIR)/logroller
+	@cp /tmp/LogRollerDerivedData/Build/Products/Release/logroller $(INSTALL_DIR)/logroller
 	@mkdir -p $(SKILL_DIR)
 	@cp skills/logroller-client-integration/SKILL.md $(SKILL_DIR)/SKILL.md
-	@echo "✓ logroller CLI symlinked to $(INSTALL_DIR)"
+	@echo "✓ logroller CLI installed to $(INSTALL_DIR)"
 	@echo "✓ Claude Code skill installed to $(SKILL_DIR)"
 
 # Remove symlinks
