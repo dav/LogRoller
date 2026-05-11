@@ -3,6 +3,10 @@ import Network
 
 final class NetworkHTTPSServer: @unchecked Sendable {
     typealias RequestHandler = @Sendable (HTTPRequest) async -> HTTPResponse
+    static let maximumHeaderBytes = 16 * 1024
+    static let maximumBodyBytes = 1 * 1024 * 1024
+    static let maximumRequestDuration = Duration.seconds(10)
+    static let maximumIdleReceiveDuration = Duration.seconds(2)
 
     private let requestHandler: RequestHandler
     private let queue = DispatchQueue(label: "org.akuaku.logroller.network-server")
@@ -71,13 +75,29 @@ final class NetworkHTTPSServer: @unchecked Sendable {
     }
 
     private func handle(connection: NWConnection) {
+        let deadline = DispatchTime.now() + Self.maximumRequestDuration.dispatchInterval
         connection.start(queue: queue)
-        receiveRequest(on: connection, buffer: Data())
+        receiveRequest(on: connection, buffer: Data(), deadline: deadline)
     }
 
-    private func receiveRequest(on connection: NWConnection, buffer: Data) {
+    private func receiveRequest(on connection: NWConnection, buffer: Data, deadline: DispatchTime) {
+        let now = DispatchTime.now()
+        guard deadline > now else {
+            send(response: errorResponse(statusCode: 408, error: "request_timeout"), on: connection)
+            return
+        }
+
+        let remaining = now.remainingDuration(until: deadline)
+        let idleTimeout = Duration.min(Self.maximumIdleReceiveDuration, remaining)
+        let timeoutController = ReceiveTimeoutController()
+        timeoutController.schedule(on: queue, deadline: now + idleTimeout.dispatchInterval) { [weak self] in
+            guard let self else { return }
+            self.send(response: self.errorResponse(statusCode: 408, error: "request_timeout"), on: connection)
+        }
+
         connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { [weak self] data, _, isComplete, error in
             guard let self else { return }
+            timeoutController.cancel()
 
             var accumulated = buffer
             if let data, !data.isEmpty {
@@ -92,18 +112,17 @@ final class NetworkHTTPSServer: @unchecked Sendable {
                     self.send(response: response, on: connection)
                 }
             case .malformed:
-                let response = HTTPResponse(
-                    statusCode: 400,
-                    headers: ["Content-Type": "application/json"],
-                    body: Data("{\"ok\":false,\"error\":\"bad_request\"}".utf8)
-                )
-                self.send(response: response, on: connection)
+                self.send(response: self.errorResponse(statusCode: 400, error: "bad_request"), on: connection)
+            case .headerTooLarge:
+                self.send(response: self.errorResponse(statusCode: 431, error: "request_header_too_large"), on: connection)
+            case .bodyTooLarge:
+                self.send(response: self.errorResponse(statusCode: 413, error: "request_body_too_large"), on: connection)
             case .incomplete:
                 if error != nil || isComplete {
                     connection.cancel()
                     return
                 }
-                self.receiveRequest(on: connection, buffer: accumulated)
+                self.receiveRequest(on: connection, buffer: accumulated, deadline: deadline)
             }
         }
     }
@@ -131,13 +150,27 @@ final class NetworkHTTPSServer: @unchecked Sendable {
         })
     }
 
-    private static func parseRequest(from data: Data) -> ParseResult {
+    func errorResponse(statusCode: Int, error: String) -> HTTPResponse {
+        HTTPResponse(
+            statusCode: statusCode,
+            headers: ["Content-Type": "application/json"],
+            body: Data("{\"ok\":false,\"error\":\"\(error)\"}".utf8)
+        )
+    }
+
+    static func parseRequest(from data: Data) -> ParseResult {
         let headerDelimiter = Data([0x0D, 0x0A, 0x0D, 0x0A])
         guard let headerRange = data.range(of: headerDelimiter) else {
+            if data.count > maximumHeaderBytes {
+                return .headerTooLarge
+            }
             return .incomplete
         }
 
         let headerData = data[..<headerRange.lowerBound]
+        if headerData.count > maximumHeaderBytes {
+            return .headerTooLarge
+        }
         guard let headerText = String(data: headerData, encoding: .utf8) else {
             return .malformed
         }
@@ -168,13 +201,28 @@ final class NetworkHTTPSServer: @unchecked Sendable {
         }
 
         let bodyStart = headerRange.upperBound
-        let contentLength = Int(header(named: "Content-Length", in: headers) ?? "0") ?? 0
-        guard data.count >= bodyStart + contentLength else {
+        guard let contentLength = Int(header(named: "Content-Length", in: headers) ?? "0"), contentLength >= 0 else {
+            return .malformed
+        }
+        if contentLength > maximumBodyBytes {
+            return .bodyTooLarge
+        }
+
+        let currentBodyBytes = data.count - bodyStart
+        if currentBodyBytes > maximumBodyBytes {
+            return .bodyTooLarge
+        }
+
+        let (requestEnd, overflow) = bodyStart.addingReportingOverflow(contentLength)
+        guard !overflow else {
+            return .bodyTooLarge
+        }
+        guard data.count >= requestEnd else {
             return .incomplete
         }
 
         let body = contentLength > 0
-            ? data.subdata(in: bodyStart..<(bodyStart + contentLength))
+            ? data.subdata(in: bodyStart..<requestEnd)
             : Data()
 
         return .success(HTTPRequest(method: method, path: path, headers: headers, body: body))
@@ -190,6 +238,12 @@ final class NetworkHTTPSServer: @unchecked Sendable {
             return "OK"
         case 400:
             return "Bad Request"
+        case 408:
+            return "Request Timeout"
+        case 413:
+            return "Payload Too Large"
+        case 431:
+            return "Request Header Fields Too Large"
         case 404:
             return "Not Found"
         case 500:
@@ -201,9 +255,11 @@ final class NetworkHTTPSServer: @unchecked Sendable {
         }
     }
 
-    private enum ParseResult {
+    enum ParseResult {
         case incomplete
         case malformed
+        case headerTooLarge
+        case bodyTooLarge
         case success(HTTPRequest)
     }
 
@@ -252,5 +308,43 @@ final class NetworkHTTPSServer: @unchecked Sendable {
             defer { lock.unlock() }
             return result
         }
+    }
+
+    private final class ReceiveTimeoutController: @unchecked Sendable {
+        private var workItem: DispatchWorkItem?
+
+        func schedule(on queue: DispatchQueue, deadline: DispatchTime, block: @escaping @Sendable () -> Void) {
+            cancel()
+
+            let workItem = DispatchWorkItem(block: block)
+            self.workItem = workItem
+            queue.asyncAfter(deadline: deadline, execute: workItem)
+        }
+
+        func cancel() {
+            workItem?.cancel()
+            workItem = nil
+        }
+    }
+}
+
+private extension Duration {
+    var dispatchInterval: DispatchTimeInterval {
+        .milliseconds(Int((components.seconds * 1_000) + (components.attoseconds / 1_000_000_000_000_000)))
+    }
+}
+
+private extension DispatchTime {
+    func remainingDuration(until other: DispatchTime) -> Duration {
+        if other.uptimeNanoseconds <= uptimeNanoseconds {
+            return .zero
+        }
+        return .nanoseconds(Int(other.uptimeNanoseconds - uptimeNanoseconds))
+    }
+}
+
+private extension Duration {
+    static func min(_ lhs: Duration, _ rhs: Duration) -> Duration {
+        lhs <= rhs ? lhs : rhs
     }
 }

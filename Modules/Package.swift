@@ -12,5 +12,6 @@ let package = Package(
         .target(name: "LogRollerCore"),
         .target(name: "LogRollerServer", dependencies: ["LogRollerCore"]),
         .testTarget(name: "LogRollerCoreTests", dependencies: ["LogRollerCore"]),
+        .testTarget(name: "LogRollerServerTests", dependencies: ["LogRollerServer"]),
     ]
 )
