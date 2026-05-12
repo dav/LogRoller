@@ -15,6 +15,17 @@ private func payloadJSONString(for payload: JSONValue) -> String {
     return text
 }
 
+private let localTimestampFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.dateFormat = "yyyy-MM-dd hh:mm:ss a"
+    return formatter
+}()
+
+private func localTimestampString(for date: Date) -> String {
+    localTimestampFormatter.string(from: date)
+}
+
 private func eventJSONString(for event: StoredEvent) -> String? {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
@@ -329,12 +340,14 @@ private struct EventList: View {
                         .bold()
                     Text("\(event.deviceID) • \(event.level.rawValue) • \(sequenceLabel(for: event))")
                         .font(.caption)
-                    Text("event: \(LogRollerJSONCoders.render(date: event.ts))")
+                    Text("event: \(localTimestampString(for: event.ts))")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                    Text("received: \(LogRollerJSONCoders.render(date: event.recvTS))")
+                        .help("UTC: \(LogRollerJSONCoders.render(date: event.ts))")
+                    Text("received: \(localTimestampString(for: event.recvTS))")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .help("UTC: \(LogRollerJSONCoders.render(date: event.recvTS))")
                     if let resourcesText = resourcesSummary(for: event.resources) {
                         Text("resources: \(resourcesText)")
                             .font(.caption2)
