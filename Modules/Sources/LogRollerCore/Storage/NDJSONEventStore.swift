@@ -243,7 +243,21 @@ public actor NDJSONEventStore: EventStore {
         }
 
         let result = collected
-            .sorted { $0.ts > $1.ts }
+            .sorted { lhs, rhs in
+                if lhs.ts != rhs.ts {
+                    return lhs.ts > rhs.ts
+                }
+                switch (lhs.seq, rhs.seq) {
+                case let (l?, r?) where l != r:
+                    return l > r
+                case (.some, .none):
+                    return true
+                case (.none, .some):
+                    return false
+                default:
+                    return false
+                }
+            }
             .prefix(limit)
             .map { $0 }
         Self.debugLog(
