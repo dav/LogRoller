@@ -6,7 +6,7 @@ DEPLOY_PATH = akuaku.org/LogRoller/
 DMG_BUILD_DIR = /tmp/LogRollerBuild
 DMG_PATH = $(DMG_BUILD_DIR)/LogRoller.dmg
 
-.PHONY: cli cli-debug install uninstall clean deploy deploy-html-only bump-build dmg
+.PHONY: cli cli-debug install uninstall clean deploy deploy-html-only check-clean bump-build bump-marketing dmg
 
 # Build CLI tool (release)
 cli:
@@ -63,6 +63,14 @@ clean:
 	rm -rf /tmp/LogRollerDerivedData /tmp/LogRollerBuild
 	@echo "Cleaned build artifacts"
 
+# Fail if working tree is dirty
+check-clean:
+	@Scripts/check-clean.sh
+
+# Interactively bump marketing version (major/minor/patch/skip)
+bump-marketing:
+	@Scripts/bump-marketing.sh
+
 # Bump build number in version.txt and project.yml
 bump-build:
 	@VERSION=$$(sed -n '1p' $(VERSION_FILE)); \
@@ -77,10 +85,11 @@ dmg: bump-build
 	@echo "=== Building DMG ==="
 	Scripts/build-release.sh
 
-# Full deploy: bump build, create DMG, zip, deploy to server
-deploy: dmg
+# Full deploy: require clean tree, prompt for marketing bump, bump build, create DMG, zip, deploy, commit + tag
+deploy: check-clean bump-marketing dmg
 	@VERSION=$$(sed -n '1p' $(VERSION_FILE)); \
 	BUILD=$$(sed -n '2p' $(VERSION_FILE)); \
+	STATE=$$(cat /tmp/LogRoller-marketing-state 2>/dev/null || echo "skipped"); \
 	echo ""; \
 	echo "=== Distributing v$$VERSION ($$BUILD) ==="; \
 	echo ""; \
@@ -92,6 +101,17 @@ deploy: dmg
 	echo "→ Deploying to $(DEPLOY_HOST)..."; \
 	scp html/* $(DEPLOY_HOST):$(DEPLOY_PATH); \
 	echo "✓ Deployed to $(DEPLOY_HOST):$(DEPLOY_PATH)"; \
+	echo ""; \
+	echo "→ Committing version bump..."; \
+	git add $(VERSION_FILE) project.yml LogRoller.xcodeproj/project.pbxproj; \
+	if [ "$$STATE" = "bumped" ]; then \
+		git commit -m "Release v$$VERSION (build $$BUILD)"; \
+		git tag "v$$VERSION"; \
+		echo "✓ Committed and tagged v$$VERSION (not pushed)"; \
+	else \
+		git commit -m "Bump build to $$BUILD"; \
+		echo "✓ Committed build bump (no tag)"; \
+	fi; \
 	echo ""; \
 	echo "=== Deploy complete: v$$VERSION ($$BUILD) ==="
 
